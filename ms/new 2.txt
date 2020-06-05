@@ -1,0 +1,53 @@
+<body layout="row">
+  <div ng-app="MyApp" ng-controller="ExampleController" layout="column" layout-padding ng-cloak>
+    <h1>Angular Read More Directive</h1>
+
+    <md-content md-theme="docs-dark" layout-padding>
+      <h2>Result</h2>
+
+      <div hm-read-more hm-text="{{text}}" hm-limit="{{limit}}" hm-more-text="{{moreText}}" hm-less-text="{{lessText}}" hm-dots-class="{{dotsClass}}" hm-link-class="{{linkClass}}">
+      </div>
+    </md-content>
+    <md-content layout-padding>
+      <h2>Options</h2>
+
+      <form name="userForm">
+        <div layout layout-sm="column">
+          <md-input-container flex>
+            <label>Text</label>
+            <textarea ng-model="text" columns="1" md-maxlength="700"></textarea>
+          </md-input-container>
+        </div>
+        <div layout layout-sm="column">
+          <md-input-container flex>
+            <label>Limit</label>
+            <input ng-model="limit" type="number" />
+          </md-input-container>
+          <md-input-container flex>
+            <label>Less text</label>
+            <input ng-model="lessText" type="text" />
+          </md-input-container>
+          <md-input-container flex>
+            <label>More text</label>
+            <input ng-model="moreText" type="text" />
+          </md-input-container>
+          <md-input-container>
+            <label>Dots Class</label>
+            <md-select ng-model="dotsClass">
+              <md-option value="toggle-dots-grey" selected>Grey</md-option>
+              <md-option value="toggle-dots-yellow">Yellow</md-option>
+            </md-select>
+          </md-input-container>
+          <md-input-container>
+            <label>Link Class</label>
+            <md-select ng-model="linkClass">
+              <md-option value="toggle-link-grey">Grey</md-option>
+              <md-option value="toggle-link-yellow" selected>Yellow</md-option>
+            </md-select>
+          </md-input-container>
+        </div>
+      </form>
+
+    </md-content>
+  </div>
+</body>

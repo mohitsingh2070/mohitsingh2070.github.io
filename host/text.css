@@ -1,0 +1,157 @@
+a:link{color: blue;}
+a:visited{color: blueviolet;
+           text-decoration: magenta;}
+ a:hover{
+font-weight: bold;
+border:none;} 
+ a:active{background-color: orange;}      
+body {
+    margin: 10px;
+    padding: 1px;
+    height: 100%;
+    background: url("coffee.jpg");
+ 
+   background-position: top;
+    font-family: sans-serif;
+    background-repeat: no-repeat;
+    background-attachment: scroll;
+}
+.admin{
+    width: 100px;
+    height: 100px;
+    padding-left: 0;
+    border-radius: 50%;
+    position: relative;
+    top:-70px;
+    left: -70;
+}
+h1{
+    margin: 0;
+    padding: 0 0 20px;
+    text-align: center;
+    font-size: 30px;
+}
+.box{
+    width: 320px;
+    height: 420px;
+    background: #000;
+    color: #fff;
+    position: absolute;
+    top: 25%;
+    left:37%;
+   position: absolute;
+   box-sizing: border-box;
+   padding: 20px 30px;
+}
+.box p{
+    margin: 0;
+    padding: 0;
+    font-weight: bold;
+    color:yellow;
+}
+.box input{
+    width: 100%;
+    margin-bottom: 20px;
+    margin-top: 20px;
+}
+.box input[type="text"], input[type="password"]{
+    border: 10px;
+    border-bottom: 2px solid#000;
+    background: transparent;
+    color: #fff;
+    font-size: 20px;
+}
+.box input[type="submit"]{
+    height:35px;
+    background: grey;
+    color: #fff;
+    font-size: 20ps;
+    border-radius: 20px;
+}
+.box input[type="submit"]:hover{
+    cursor: pointer;
+    background: #fff;
+    color: #000;
+}
+.box2{
+    position: fixed;
+    top: 70%;
+    width:245px;
+    height:60px;
+    margin-left:0;
+    background: none;  
+}
+.fb{
+    width: 22%;
+    height: 60px;
+    padding-left: 0;
+    position: relative;
+    border-radius: 30px; 
+    margin-left: 0;
+}
+.insta{
+   width : 22%;
+    height: 60px;
+    padding-left: 0;
+    position: relative;
+    border-radius: 30px; 
+    margin-left: 0;
+}
+.twit{
+    width: 25%;
+    height: 60px;
+    padding-left: 0;
+    position: relative;
+    border-radius: 30px; 
+    margin-left: 0;
+}
+.mail{
+    width: 25%;
+    height: 60px;
+    padding-left: 0;
+   border-radius: 30px; 
+    position: relative;
+    margin-left: 0;
+}
+.dropbtn{
+    background-color: aquamarine;
+    color: black;
+    padding: 10px;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 20px;
+}
+.dropbtn:hover,.dropbtn:focus{
+    background-color: blue;
+    color: #fff;
+}
+.dropdown{
+    position: relative;
+    display:inline-block; 
+    border: 67px black;
+}
+.dropcontent a{
+    text-decoration: green;
+    display:block;
+    padding: 20px;
+    border-radius: 20px;
+}
+.dropcontent {
+    position: relative;
+    font: bold;
+    padding: 16px;
+    background-color: white;
+    min-width: 160px;
+    display: none;
+    box-shadow:greenyellow;
+    z-index: 1;
+    border-radius: 20px;
+}
+.dropcontent a:hover
+{background-color: plum;
+color: black;}
+
+.show{display:block;}
+#HELL{
+color: blue;
+}

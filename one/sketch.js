@@ -1,6 +1,7 @@
 let toggle = 1;
 let button;
-let number=0;
+let number=1;
+let song;
 function preload() {
   
   song = loadSound('lany.mp3');

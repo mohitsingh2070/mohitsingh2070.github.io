@@ -13,6 +13,7 @@ function setup() {
   value+=1;
   button = createButton('makeAwish');
   button.position(width/40, height/40);
+  button.style('font-size', '60px');
   button.mousePressed(changeBG);
 }
 

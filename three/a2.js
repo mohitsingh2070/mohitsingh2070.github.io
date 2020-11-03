@@ -9,9 +9,11 @@ let sum;
 let label;
 let classifier;
 //let button;
-////function preload() {
- // penguin = createCapture(VIDEO);
-//}
+function preload() {
+  
+  song = loadSound('singAsong.mp3');
+  //penguin = createCapture(VIDEO);
+}
 let video;
 //let imagingButton;
 function videoReady(){
@@ -77,7 +79,7 @@ function setup(){
   
     createCanvas(620,540);
     background(255);
-   
+   value+=1;
     video = createCapture(VIDEO);
     video.hide();
   mobilenet=ml5.featureExtractor('MobileNet',modelReady);  
@@ -87,6 +89,12 @@ function setup(){
  button=createButton(" MODEL 1 ");
  button.mousePressed(function(){
 
+   if(value==1){
+     song.play();
+    background(0, 255, 0);
+     value+=1;
+   }
+   
 classifier.addImage('HELLO ASHUTOSH , FIRST ITEM');
 
  });
@@ -125,6 +133,7 @@ fill(255);
     strokeWeight(3)
     textSize(46);
    text(name,12,height-15);
+  
    //text(prob,10,height-109);
 
   }

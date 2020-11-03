@@ -2,15 +2,14 @@ let toggle = 1;
 let button;
 let number=1;
 let song;
-function loader() {
+//function preload() {
   
-  song = loadSound('lany.mp3');
-  frameRate(1);
+ // song = loadSound('lany.mp3');
   //penguin = createCapture(VIDEO);
-}
+//}
 function setup() {
-  loader();
   createCanvas(windowWidth,windowHeight);
+  song = loadSound('lany.mp3');
   background(20, 190, 199);
   textSize(2);
 
@@ -22,11 +21,12 @@ function setup() {
 
 function draw() {
   if (mouseIsPressed) {
-    frameRate(60);
-    if(number==1){
-     song.play();
-    number+=1;
-    }
+    
+    if(song.isLoaded()){
+      if(number==1){
+      song.play();
+        number+=1;
+    }}
     strokeWeight(12);
     line(pmouseX, pmouseY, mouseX, mouseY);
     // print(toggle);}

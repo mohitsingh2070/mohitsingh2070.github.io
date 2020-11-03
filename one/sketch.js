@@ -1,6 +1,6 @@
 let toggle = 1;
 let button;
-let value=0;
+let number=0;
 function preload() {
   
   song = loadSound('lany.mp3');
@@ -19,10 +19,10 @@ function setup() {
 
 function draw() {
   if (mouseIsPressed) {
-    song.play();
-    if(value==1){
+    
+    if(number==1){
      song.play();
-    value++;
+    number+=1;
     }
     strokeWeight(12);
     line(pmouseX, pmouseY, mouseX, mouseY);

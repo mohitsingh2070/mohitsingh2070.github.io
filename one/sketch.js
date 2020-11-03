@@ -19,6 +19,7 @@ function setup() {
 
 function draw() {
   if (mouseIsPressed) {
+    song.play();
     if(value==1){
      song.play();
     value++;

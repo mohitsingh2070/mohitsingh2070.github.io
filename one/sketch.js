@@ -11,7 +11,7 @@ function setup() {
   background(20, 190, 199);
   textSize(2);
   value+=1;
-  button = createButton('GOT JEALOUS');
+  button = createButton('makeAwish');
   button.position(width/40, height/40);
   button.mousePressed(changeBG);
 }

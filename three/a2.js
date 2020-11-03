@@ -1,111 +1,130 @@
 
+let addTrain;
 let train;
 let mobilenet;
+let predictor;
+let slider;
+let value=0;
+let sum;
+let label;
 let classifier;
-let button;
-
+//let button;
+////function preload() {
+ // penguin = createCapture(VIDEO);
+//}
 let video;
-let imagingButton;
-
-function videoReady() {
+//let imagingButton;
+function videoReady(){
   console.log('video is ready');
-
-  //mobilenet.predict(gotResult);
-}
-
-function modelReady() {
-  console.log('model is ready');
-
-  //mobilenet.predict(gotResult);
-}
-
-
-let name = "";
-let prob;
-
-function gotResult(error, results) {
-  if (error) {
-    console.error(error);
-  } else {
-    // console.log(results);
-   // name = results[0].label;
-   // prob = results[0].confidence;
-
-    //     createP(`${name}
-    //  CONFIDENCE IS ${100 * prob}%`);
   
-  classifier.classify(gotResult);
+ //mobilenet.predict(gotResult);
 }
+function modelReady(){
+  console.log('model is ready');
+  
+ //mobilenet.predict(gotResult);
 }
 
 
-function whileTraining(loss) {
 
-  if (loss == null) {
+// function imageReady(){
+//   console.log('image is ready');
+// }
+
+let name=""; 
+
+let prob;
+function gotResult(error,results){
+  if(error){
+ console.error(error);
+  }
+  else{
+
+    value=results.value;
+   // console.log(results);
+     name=results[0].label;
+     //prob=results[0].confidence;
+   //  text(value,12,height-15);
+
+   
+ 
+//     createP(`${name}
+//  CONFIDENCE IS ${100 * prob}%`);
+     mobilenet.classify(gotResult);
+   //  predictor.predict(gotResult);
+  }
+}
+
+
+function whileTraining(loss){
+
+  if(loss==null){
 
     console.log("Training COmplete");
-    classifier.classify(gotResult);
-  } else {
-    console.log(loss);
+     classifier.classify(gotResult);
+   // predictor.predict(gotResult);
+  }else{
+      console.log(loss);
 
   }
 
-  console.log(loss);
+console.log(loss);
 
 
 }
 
-function setup() {
-
-  createCanvas(620, 540);
-  background(255);
-
-  video = createCapture(VIDEO);
-  video.hide();
-  mobilenet = ml5.featureExtractor('MobileNet', modelReady);
-  classifier = mobilenet.classification(video, videoReady);
- 
+function setup(){
   
-  button = createButton(" MODEL 1 ");
-  button.mousePressed(function() {
-    classifier.addImage('AWESOME GUY MS');
-  });
+    createCanvas(620,540);
+    background(255);
+   
+    video = createCapture(VIDEO);
+    video.hide();
+  mobilenet=ml5.featureExtractor('MobileNet',modelReady);  
+    //  mobilenet=ml5.featureExtractor('MobileNet',modelReady);
+    classifier=mobilenet.classification(video,videoReady);
+    // predictor=mobilenet.regression(video,videoReady);
+ button=createButton(" MODEL 1 ");
+ button.mousePressed(function(){
 
-  
-  
-  imagingButton = createButton(" MODEL 2");
-  imagingButton.mousePressed(function() {
-    classifier.addImage('MODEL 2WO');
-  });
-  
-  
-  train = createButton(" Train ");
-  train.mousePressed(function() {
-    classifier.train(whileTraining);
-
-  });
-
-  
-   save=createButton(" SAVE ");
- save.mousePressed(function(){
-
- classifier.save();
+classifier.addImage('HELLO ASHUTOSH , FIRST ITEM');
 
  });
 
+ imagingButton=createButton(" MODEL 2 ");
+ imagingButton.mousePressed(function(){
 
-}
+classifier.addImage('SECOND ITEM');
+
+ });
+
+//slider= createSlider(0,1,0.5,0.1);
 
 
 
-  function draw() {
+//addTrain=createButton(" START ");
+//addTrain.mousePressed(function(){
+
+ // predictor.addImage(slider.value());
+
+
+//})
+
+ train=createButton(" Train ");
+ train.mousePressed(function(){
+  classifier.train(whileTraining);
+  //predictor.train(whileTraining);
+
+ });
+
+  }
+  function draw(){
     background(0);
-    image(video, 0, 0);
-    fill(255);
+image(video,0,0);
+fill(255);
     strokeWeight(3)
     textSize(46);
-    text(name, 10, height - 15);
-    // print(count);
-    //text(prob,10,height-109);
+   text(name,12,height-15);
+   //text(prob,10,height-109);
 
   }

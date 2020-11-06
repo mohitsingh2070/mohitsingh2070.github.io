@@ -2,10 +2,35 @@ let qrcode;
 let div;
 let input, button, greeting;
 let values;
+let texton;
+let bg  = new Image();
+let url="";
+
+function preload(){
+    
+  loadJSON("https://api.nasa.gov/planetary/apod?api_key=Q6WSqbnCPGfP6p9wYFBOUVWawr83d5qy4Boax1vP",gotData);
+  
+  
+}
+
+function gotData(data){
+  print(data);
+  url=data.url;
+  print(url);
+  bg = createImg(url,'test');
+ // image(bg, 0, 0);
+  texton=data.explanation;
+}
+
+
 
 function setup() {
   createCanvas(720, 800);
-  
+  textAlign(CENTER);
+  strokeWeight(2);
+    textSize(20);
+  textStyle(BOLD);
+createP(texton);
   song = loadSound('maker.mp3');
 
   input = createInput();
@@ -30,7 +55,7 @@ function setup() {
 }
 
 function draw() {
-
+image(bg, 0, 0);
   button = createButton('OKAY');
   button.position(400,height/4 );
   button.mousePressed(SUBMIT);
@@ -58,7 +83,7 @@ function SAD() {
 }
 function SUBMIT() {
   makeCode();
- 
+  
 }
 function greet() {
   const name = input.value();

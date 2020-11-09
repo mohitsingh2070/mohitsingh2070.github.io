@@ -5,6 +5,7 @@ let values;
 let texton;
 let bg  = new Image();
 let url="";
+let head;
 
 function preload(){
     
@@ -20,17 +21,22 @@ function gotData(data){
   bg = createImg(url,'test');
  // image(bg, 0, 0);
   texton=data.explanation;
+  head=data.title;
+ 
+
 }
 
 
 
 function setup() {
   createCanvas(720, 800);
-  textAlign(CENTER);
+  textAlign(CENTER, CENTER);
   strokeWeight(2);
     textSize(20);
-  textStyle(BOLD);
-createP(texton);
+   textStyle(BOLD);
+   
+ 
+
   song = loadSound('maker.mp3');
 
   input = createInput();
@@ -55,7 +61,8 @@ createP(texton);
 }
 
 function draw() {
-image(bg, 0, 0);
+//image(bg, 0, 0);
+  
   button = createButton('OKAY');
   button.position(400,height/4 );
   button.mousePressed(SUBMIT);
@@ -84,17 +91,22 @@ function SAD() {
 function SUBMIT() {
   makeCode();
   
+  
 }
 function greet() {
   const name = input.value();
   values=name;
   greeting.html(' THANK YOU ' + name + '!');
+    text(head,10,10,700,80);
+    text( texton,10,-100,700,800);
+  console.log(head);
   
    if (song.isPlaying()) {
   //  song.stop();
-    background(255, 0, 0);
+    
+   // background(255, 0, 0);
   } else {
     song.play();
-    background(0, 255, 0);
+   // background(0, 255, 0);
   }
 }

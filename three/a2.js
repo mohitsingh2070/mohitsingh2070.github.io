@@ -95,14 +95,14 @@ function setup(){
      value+=1;
    }
    
-classifier.addImage('HELLO ASHUTOSH , FIRST ITEM');
+classifier.addImage('MOHIT SINGH');
 
  });
 
  imagingButton=createButton(" MODEL 2 ");
  imagingButton.mousePressed(function(){
 
-classifier.addImage('SECOND ITEM');
+classifier.addImage('CHARUDATT PANI PURI');
 
  });
 

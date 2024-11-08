@@ -4,19 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Perils of Discontinuity</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         /* Basic Reset */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Georgia', serif;
+            font-family: 'Merriweather', serif;
             color: #333;
         }
 
         body {
             background-color: #f4f4f9;
-            line-height: 1.6;
+            line-height: 1.7;
             padding: 20px;
             max-width: 800px;
             margin: auto;
@@ -24,43 +27,67 @@
 
         /* Header */
         header {
-            margin-bottom: 20px;
+            text-align: center;
+            margin-bottom: 30px;
         }
-        
+
+        header img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
         header h1 {
-            font-size: 2.5em;
-            color: #333;
-            margin-bottom: 10px;
+            font-size: 2.8em;
+            color: #222;
+            margin: 15px 0;
+            font-weight: 700;
         }
 
         /* Blog Content */
         section {
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 6px solid #8e44ad; /* Accent border */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
         h2 {
             font-size: 1.8em;
-            color: #555;
-            margin-bottom: 10px;
+            color: #8e44ad;
+            margin-bottom: 12px;
+            font-weight: 700;
         }
 
         p {
-            font-size: 1.1em;
-            line-height: 1.8;
+            font-size: 1.15em;
+            line-height: 1.9;
             margin-bottom: 15px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #777;
+            font-size: 0.9em;
+        }
+
+        footer a {
+            color: #8e44ad;
+            text-decoration: none;
         }
 
         /* Responsive Typography */
         @media (max-width: 768px) {
             header h1 {
-                font-size: 2em;
+                font-size: 2.2em;
             }
             h2 {
-                font-size: 1.5em;
+                font-size: 1.6em;
             }
             p {
                 font-size: 1em;
@@ -70,8 +97,9 @@
 </head>
 <body>
 
-    <!-- Header Section -->
+    <!-- Header Section with Image -->
     <header>
+        <img src="image_1.webp" alt="Blog Banner Image">
         <h1>The Perils of Discontinuity</h1>
     </header>
 
@@ -102,6 +130,11 @@
         <h2>The Influence of Technology on Human Attention</h2>
         <p>Very swiftly evolving platforms, designed by some of the most well-resourced companies on Earth, built by some of the most talented product designers, using cutting-edge brain science to maximize the time we spend on these platforms.</p>
     </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2023 by Your Name | <a href="#">Contact</a></p>
+    </footer>
 
 </body>
 </html>

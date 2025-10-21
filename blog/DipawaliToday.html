@@ -71,18 +71,24 @@
             margin-bottom: 15px;
         }
 
-        /* Footer */
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            color: #777;
-            font-size: 0.9em;
-        }
+footer {
+    text-align: center;
+    margin-top: 40px;
+    color: #777;
+    font-size: 0.9em;
+}
 
-        footer a {
-            color: #2aa4f5;
-            text-decoration: none;
-        }
+footer a {
+    color: #2aa4f5;
+    text-decoration: none;
+}
+
+.visitor-globe {
+    margin-top: 15px;
+    display: inline-block;
+}
+
+        
 
         /* Responsive Typography */
         @media (max-width: 768px) {
@@ -237,12 +243,28 @@ The light may be dimmed, but it is not yet extinguished, there is still hope to 
     </section>
 
     
-
-
     <!-- Footer -->
-    <footer>
-        <p>&copy; 2025 by Mohit Singh | <a href="https://mohitsingh2070.github.io/">Contact</a></p>
-    </footer>
+<footer>
+  <p>&copy; 2025 by Mohit Singh | 
+    <a href="https://mohitsingh2070.github.io/">Contact</a>
+  </p>
+
+  <!-- Visitor Map (MapMyVisitors) -->
+  <div class="visitor-globe">
+    <script type="text/javascript" id="mapmyvisitors"
+      src="https://mapmyvisitors.com/map.js?cl=ffffff&w=a&t=n&d=1aju5L_q_kaGv3d_wUBdU1OD5xnUQCpYyplGWfmh9TI">
+    </script>
+
+    <!-- Fallback for browsers with JS disabled -->
+    <noscript>
+      <a href="https://mapmyvisitors.com/web/1c05x" title="Visit tracker">
+        <img src="https://mapmyvisitors.com/map.png?cl=ffffff&w=a&t=n&d=1aju5L_q_kaGv3d_wUBdU1OD5xnUQCpYyplGWfmh9TI"
+             alt="Map showing website visitors"/>
+      </a>
+    </noscript>
+  </div>
+</footer>
+
 
 </body>
 </html>

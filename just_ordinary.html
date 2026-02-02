@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>A Small Question 💌</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #ffdde1, #ee9ca7);
+    font-family: "Poppins", sans-serif;
+}
+
+.card {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    text-align: center;
+    width: 520px;
+    max-width: 90%;
+    transition: 0.3s ease;
+}
+
+h1 {
+    font-size: 30px;
+    margin-bottom: 15px;
+}
+
+p {
+    font-size: 18px;
+    color: #444;
+}
+
+.box {
+    position: relative;
+    margin-top: 25px;
+    height: 160px;
+    border: 3px dashed #f39c9c;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff5f7;
+}
+
+button {
+    font-size: 20px;
+    padding: 12px 28px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+#yesBtn {
+    background: #ff4d6d;
+    color: white;
+    position: absolute;
+    left: 40px;
+    top: 60px;
+}
+
+#noBtn {
+    background: #ddd;
+    color: black;
+    position: absolute;
+    left: 200px;
+    top: 60px;
+}
+
+.success {
+    display: none;
+}
+
+.success img {
+    width: 100%;
+    border-radius: 16px;
+    margin-top: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card" id="mainCard">
+    <h1>Hey… I’ve been thinking 💭</h1>
+    <p>
+        What if we made a memory together soon?  
+        Something cozy… fun… and just *us*.
+    </p>
+
+    <p style="margin-top:10px;">
+        Would you like to spend a little time with me this weekend? ✨
+    </p>
+
+    <div class="box" id="box">
+        <button id="yesBtn">Yes 💖</button>
+        <button id="noBtn">No 😅</button>
+    </div>
+</div>
+
+
+<div class="card success" id="successCard">
+    <h1>You just made my day 🥹💞</h1>
+    <p>
+        I promise to make it special, full of laughs, comfort,  
+        and a little magic ✨
+    </p>
+
+    <p style="margin-top:10px; font-weight:600;">
+        Looking forward to our moment together 💫
+    </p>
+
+    <img src="https://images.unsplash.com/photo-1520975698519-59c13c3a52f1?auto=format&fit=crop&w=1200&q=80">
+</div>
+
+
+<script>
+const noBtn = document.getElementById("noBtn");
+const box = document.getElementById("box");
+const yesBtn = document.getElementById("yesBtn");
+
+noBtn.addEventListener("mouseenter", () => {
+    const boxRect = box.getBoundingClientRect();
+
+    const maxX = boxRect.width - noBtn.offsetWidth;
+    const maxY = boxRect.height - noBtn.offsetHeight;
+
+    const randX = Math.random() * maxX;
+    const randY = Math.random() * maxY;
+
+    noBtn.style.left = randX + "px";
+    noBtn.style.top = randY + "px";
+});
+
+yesBtn.addEventListener("click", () => {
+    document.getElementById("mainCard").style.display = "none";
+    document.getElementById("successCard").style.display = "block";
+});
+</s

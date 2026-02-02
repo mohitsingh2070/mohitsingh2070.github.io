@@ -82,6 +82,17 @@ button {
     border-radius: 16px;
     margin-top: 15px;
 }
+
+    #noBtn {
+    background: #ddd;
+    color: black;
+    position: absolute;
+    left: 200px;
+    top: 60px;
+    transition: 0.15s ease-out;
+}
+
+    
 </style>
 </head>
 
@@ -125,24 +136,39 @@ const noBtn = document.getElementById("noBtn");
 const box = document.getElementById("box");
 const yesBtn = document.getElementById("yesBtn");
 
-noBtn.addEventListener("mouseenter", () => {
+// Make NO button shy when mouse gets close
+box.addEventListener("mousemove", (e) => {
     const boxRect = box.getBoundingClientRect();
+    const noRect = noBtn.getBoundingClientRect();
 
-    const maxX = boxRect.width - noBtn.offsetWidth;
-    const maxY = boxRect.height - noBtn.offsetHeight;
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
 
-    const randX = Math.random() * maxX;
-    const randY = Math.random() * maxY;
+    const noCenterX = noRect.left + noRect.width / 2;
+    const noCenterY = noRect.top + noRect.height / 2;
 
-    noBtn.style.left = randX + "px";
-    noBtn.style.top = randY + "px";
+    const distance = Math.hypot(mouseX - noCenterX, mouseY - noCenterY);
+
+    // Trigger escape if mouse is close
+    if (distance < 120) {
+        const maxX = boxRect.width - noBtn.offsetWidth;
+        const maxY = boxRect.height - noBtn.offsetHeight;
+
+        const randX = Math.random() * maxX;
+        const randY = Math.random() * maxY;
+
+        noBtn.style.left = randX + "px";
+        noBtn.style.top = randY + "px";
+    }
 });
 
+// YES click action
 yesBtn.addEventListener("click", () => {
     document.getElementById("mainCard").style.display = "none";
     document.getElementById("successCard").style.display = "block";
 });
 </script>
+
 
 </body>
 </html>

@@ -66,6 +66,9 @@ p {
 
 <body>
 
+<audio id="bgMusic" src="/night_changes.mp3" preload="auto" loop></audio>
+
+
 <canvas id="fireworks"></canvas>
 
 <div class="card">
@@ -188,6 +191,20 @@ function animate() {
 }
 
 animate();
+
+    window.addEventListener("load", () => {
+    const music = document.getElementById("bgMusic");
+    const savedTime = localStorage.getItem("musicTime");
+
+    if (savedTime) {
+        music.currentTime = parseFloat(savedTime);
+    }
+
+    music.volume = 0.9;
+    music.play();
+});
+
+    
 </script>
 
 </body>

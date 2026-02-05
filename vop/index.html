@@ -97,6 +97,8 @@ button {
 </head>
 
 <body>
+    
+<audio id="bgMusic" src="/One_Direction_Night_Changes.mp3" preload="auto"></audio>
 
 <div class="card" id="mainCard">
     <h1>Hey… I’ve been thinking 💭</h1>
@@ -163,11 +165,24 @@ box.addEventListener("mousemove", (e) => {
 });
 
 // YES click action
+//yesBtn.addEventListener("click", () => {
+  //  window.location.href = "sweet.html";
+//});
+
 yesBtn.addEventListener("click", () => {
-    window.location.href = "sweet.html";
+    const music = document.getElementById("bgMusic");
+    music.play();
+
+    localStorage.setItem("musicTime", music.currentTime);
+
+    setTimeout(() => {
+        window.location.href = "sweet.html";
+    }, 1200);
 });
 
+
 </script>
+
 
 
 </body>

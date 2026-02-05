@@ -104,20 +104,22 @@ p {
 .secret-heart {
     color: transparent;
     user-select: none;
-    font-size: 28px;
+    font-size: 26px;
     text-align: center;
-    margin-top: 14px;
-    transition: 0.35s ease;
+    margin-top: 10px;
+    transition: 0.3s ease;
 }
 
-/* Reveal on copy OR selection */
-.copy-active .secret-heart,
-.select-active .secret-heart {
+/* When user selects or copies text */
+::selection {
+    background: rgba(255, 100, 150, 0.25);
+}
+
+.copy-active .secret-heart {
     color: #ff4d6d;
-    text-shadow: 0 0 14px rgba(255, 77, 109, 0.8);
-    transform: scale(1.25);
+    text-shadow: 0 0 12px rgba(255, 77, 109, 0.7);
+    transform: scale(1.15);
 }
-
 
 
 
@@ -299,16 +301,13 @@ animate();
     music.play();
 });
 
-document.addEventListener("copy", triggerHeart);
-document.addEventListener("mouseup", triggerHeart);
-
-function triggerHeart() {
+    document.addEventListener("copy", () => {
     document.body.classList.add("copy-active");
 
     setTimeout(() => {
         document.body.classList.remove("copy-active");
-    }, 1400);
-}
+    }, 1300);
+});
 
 
     

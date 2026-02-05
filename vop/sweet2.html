@@ -346,32 +346,35 @@ let currentPage = 0;
 function typeWriter(page) {
     const text = page.innerHTML;
     page.innerHTML = "";
+
     let i = 0;
 
     function write() {
-        if (i < text.length) {
-            page.innerHTML += text.charAt(i);
+        if (i >= text.length) return;
+
+        // If we hit an HTML tag, insert it instantly
+        if (text[i] === "<") {
+            let tag = "";
+            while (text[i] !== ">" && i < text.length) {
+                tag += text[i];
+                i++;
+            }
+            tag += ">";
             i++;
-            setTimeout(write, 22); // slow emotional typing
+            page.innerHTML += tag;
+        } 
+        else {
+            // Normal text → type slowly
+            page.innerHTML += text[i];
+            i++;
         }
+
+        setTimeout(write, 18); // typing speed (romantic)
     }
+
     write();
 }
 
-// SHOW FIRST PAGE
-typeWriter(pages[0]);
-
-// AUTO PAGE TURN synced to song
-setInterval(() => {
-    pages[currentPage].classList.remove("active");
-
-    currentPage++;
-
-    if (currentPage < pages.length) {
-        pages[currentPage].classList.add("active");
-        typeWriter(pages[currentPage]);
-    }
-}, 16000); // ~ Night Changes pacing
 
   
     

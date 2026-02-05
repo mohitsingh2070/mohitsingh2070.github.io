@@ -100,6 +100,34 @@ p {
         transform: translateY(-50%) scale(1);
     }
 }
+
+.secret-heart {
+    color: transparent;
+    user-select: none;
+    font-size: 26px;
+    text-align: center;
+    margin-top: 10px;
+    transition: 0.3s ease;
+}
+
+/* When user selects or copies text */
+::selection {
+    background: rgba(255, 100, 150, 0.25);
+}
+
+.copy-active .secret-heart {
+    color: #ff4d6d;
+    text-shadow: 0 0 12px rgba(255, 77, 109, 0.7);
+    transform: scale(1.15);
+}
+
+
+
+
+
+
+
+    
 </style>
 </head>
 
@@ -153,9 +181,8 @@ to see the world full of beauty and style.<br><br>
 i hear someone lurking behind the flirtious hate,<br>
 oh again! it's you my loving fate.<br><br><br><br><br><br><br><br><br>
 
-     <p>
-         
-     </p>
+<p class="secret-heart">💖</p>
+
         
  </div>
 
@@ -273,6 +300,15 @@ animate();
     music.volume = 0.9;
     music.play();
 });
+
+    document.addEventListener("copy", () => {
+    document.body.classList.add("copy-active");
+
+    setTimeout(() => {
+        document.body.classList.remove("copy-active");
+    }, 300);
+});
+
 
     
 </script>

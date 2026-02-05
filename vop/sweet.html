@@ -26,18 +26,53 @@ canvas {
 .card {
     position: relative;
     z-index: 2;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(8px);
-    padding: 45px;
-    border-radius: 25px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 35px 40px;
+    border-radius: 26px;
     box-shadow: 0 25px 60px rgba(255, 100, 150, 0.35);
     text-align: center;
-    max-width: 620px;
+    max-width: 720px;
+    width: 90%;
+    height: 72vh;
     margin: auto;
     top: 50%;
     transform: translateY(-50%);
     animation: fadeIn 1.2s ease;
+    overflow: hidden;
 }
+
+    .poem {
+    font-size: 18.5px;
+    color: #333;
+    line-height: 1.75;
+    text-align: left;
+    overflow-y: auto;
+    height: 100%;
+    padding-right: 8px;
+    scrollbar-width: thin;
+}
+
+/* Soft fade at top & bottom */
+.poem::before,
+.poem::after {
+    content: "";
+    position: sticky;
+    display: block;
+    height: 25px;
+    pointer-events: none;
+}
+
+.poem::before {
+    top: 0;
+    background: linear-gradient(to bottom, white, transparent);
+}
+
+.poem::after {
+    bottom: 0;
+    background: linear-gradient(to top, white, transparent);
+}
+
 
 h1 {
     font-size: 36px;
@@ -49,6 +84,11 @@ p {
     color: #444;
     line-height: 1.6;
 }
+
+    .title {
+    margin-bottom: 15px;
+}
+
 
 @keyframes fadeIn {
     from {
@@ -71,9 +111,11 @@ p {
 <canvas id="fireworks"></canvas>
 
 <div class="card">
-    <h1>I somehow knew that you will say yes. 🥹</h1><br><br>
+    <h1 class="title">I somehow knew that you will say yes. 🥹</h1><br>
 
-    <p style="margin-top:15px; font-weight:600;">
+
+ <div class="poem">
+
 
 your smiling, weeping and human face,<br>
 which moves and lives unlike the stone in empty space,<br>

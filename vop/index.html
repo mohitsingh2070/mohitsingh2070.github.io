@@ -98,7 +98,6 @@ button {
 
 <body>
     
-<audio id="bgMusic" src="/One_Direction_Night_Changes.mp3" preload="auto"></audio>
 
 <div class="card" id="mainCard">
     <h1>Hey… I’ve been thinking 💭</h1>
@@ -137,8 +136,6 @@ button {
 const noBtn = document.getElementById("noBtn");
 const box = document.getElementById("box");
 const yesBtn = document.getElementById("yesBtn");
-
-// Make NO button shy when mouse gets close
 box.addEventListener("mousemove", (e) => {
     const boxRect = box.getBoundingClientRect();
     const noRect = noBtn.getBoundingClientRect();
@@ -151,7 +148,6 @@ box.addEventListener("mousemove", (e) => {
 
     const distance = Math.hypot(mouseX - noCenterX, mouseY - noCenterY);
 
-    // Trigger escape if mouse is close
     if (distance < 120) {
         const maxX = boxRect.width - noBtn.offsetWidth;
         const maxY = boxRect.height - noBtn.offsetHeight;
@@ -165,20 +161,11 @@ box.addEventListener("mousemove", (e) => {
 });
 
 // YES click action
-//yesBtn.addEventListener("click", () => {
-  //  window.location.href = "sweet.html";
-//});
-
 yesBtn.addEventListener("click", () => {
-    const music = document.getElementById("bgMusic");
-    music.play();
-
-    localStorage.setItem("musicTime", music.currentTime);
-
-    setTimeout(() => {
-        window.location.href = "sweet.html";
-    }, 1200);
+    window.location.href = "sweet.html";
 });
+
+
 
 
 </script>

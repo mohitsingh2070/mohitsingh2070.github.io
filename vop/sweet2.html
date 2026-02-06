@@ -42,36 +42,6 @@ canvas {
     overflow: hidden;
 }
 
-  .poem-container {
-    position: relative;
-    height: 55vh;
-    perspective: 1200px;
-    overflow: hidden;
-}
-
-.poem-page {
-    position: absolute;
-    width: 100%;
-    font-size: 20px;
-    line-height: 1.8;
-    text-align: left;
-    opacity: 0;
-    transform: rotateY(90deg);
-    transition: 1.2s ease;
-}
-
-.poem-page.active {
-    opacity: 1;
-    transform: rotateY(0deg);
-}
-
-.poem-page.final {
-    text-align: center;
-    font-size: 22px;
-    font-weight: 600;
-}
-
-
     .poem {
     font-size: 18.5px;
     color: #333;
@@ -130,6 +100,41 @@ p {
         transform: translateY(-50%) scale(1);
     }
 }
+
+.secret-heart {
+    opacity: 0;
+    font-size: 28px;
+    text-align: center;
+    margin-top: 20px;
+    transition: 0.4s ease;
+    transform: scale(0.9);
+}
+.copy-active .secret-heart {
+    opacity: 1;
+    color: #ff4d6d;
+    text-shadow: 0 0 12px rgba(255, 77, 109, 0.7);
+    transform: scale(1.2);
+}
+
+
+/* When user selects or copies text */
+::selection {
+    background: rgba(255, 100, 150, 0.25);
+}
+
+.copy-active .secret-heart {
+    color: #ff4d6d;
+    text-shadow: 0 0 12px rgba(255, 77, 109, 0.7);
+    transform: scale(1.15);
+}
+
+
+
+
+
+
+
+    
 </style>
 </head>
 
@@ -143,48 +148,10 @@ p {
 <div class="card">
     <h1 class="title">I somehow knew that you will say yes. 😉</h1><br>
 
-    <div class="poem-container">
-        <div class="poem-page active" id="page1">
-your smiling, weeping and human face,<br>
-which moves and lives unlike the stone in empty space,<br>
-for this at least is human, you i praise.<br><br>
 
-i sorrow for your loss, all beautiful things,<br>
-were meant to shine in the bright day.<br>
-yet life, most beautiful of all has left you today.<br>
-        </div>
+ <div class="poem">
 
-        <div class="poem-page" id="page2">
-in my heart the treasure lies, tell me,<br>
-are there no divers in these parts who,<br>
-could pluck my wealth from this fathomless sea.<br><br>
 
-cursed be the moment, when we came too close,<br>
-o harsh fate, if you have my wealth.<br>
-alas ! my soul, it was cruel mercy then to leave.<br>
-        </div>
-
-        <div class="poem-page" id="page3">
-i am tired of hollow words, let my silence speak,<br>
-leave me to play with my deepest fears,<br>
-least it only comes to me like someone who i own.<br><br>
-
-i will wait till i meet a kinder mortal,<br>
-who will persuade me with a delightful smile,<br> 
-to see the world full of beauty and style.<br>
-        </div>
-
-        <div class="poem-page final" id="page4">
- <br><br>
-i hear someone lurking behind the flirtious hate,<br>
-oh again! it's you my loving fate
-        </div>
-    </div>
-</div>
-
- <!-- <div class="poem"> -->
-
-<!-- 
 your smiling, weeping and human face,<br>
 which moves and lives unlike the stone in empty space,<br>
 for this at least is human, you i praise.<br><br>
@@ -208,7 +175,7 @@ yer i breathe joy in the darkest sunlight.<br><br>
 
  neither am i week of hand nor feeble of heart,<br>
 i have harsher embrace and stronger will.<br>
-not aware that this terrain's ground forbade my unknown feet.<br>
+not aware that this terrain's ground forbade my unknown feet.<br><br>
 
 i am tired of hollow words, let my silence speak,<br>
 leave me to play with my deepest fears,<br>
@@ -219,10 +186,14 @@ who will persuade me with a delightful smile,<br>
 to see the world full of beauty and style.<br><br>
 
 i hear someone lurking behind the flirtious hate,<br>
-oh again! it's you my loving fate.<br><br>
+oh again! it's you my loving fate.<br><br><br><br><br><br><br><br><br>
+
+<!-- <p class="secret-heart">💖</p> -->
+
         
-        
- </div> -->
+ </div>
+
+    <p class="secret-heart">💖</p>
 
 </div>
 
@@ -339,44 +310,16 @@ animate();
     music.play();
 });
 
-  const pages = document.querySelectorAll(".poem-page");
-let currentPage = 0;
+document.addEventListener("copy", () => {
+    document.body.classList.add("copy-active");
 
-// TYPEWRITER EFFECT
-function typeWriter(page) {
-    const text = page.innerHTML;
-    page.innerHTML = "";
-
-    let i = 0;
-
-    function write() {
-        if (i >= text.length) return;
-
-        // If we hit an HTML tag, insert it instantly
-        if (text[i] === "<") {
-            let tag = "";
-            while (text[i] !== ">" && i < text.length) {
-                tag += text[i];
-                i++;
-            }
-            tag += ">";
-            i++;
-            page.innerHTML += tag;
-        } 
-        else {
-            // Normal text → type slowly
-            page.innerHTML += text[i];
-            i++;
-        }
-
-        setTimeout(write, 18); // typing speed (romantic)
-    }
-
-    write();
-}
+    setTimeout(() => {
+        document.body.classList.remove("copy-active");
+    }, 1500);
+});
 
 
-  
+
     
 </script>
 

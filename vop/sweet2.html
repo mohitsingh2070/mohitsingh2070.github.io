@@ -128,6 +128,24 @@ p {
     transform: scale(1.15);
 }
 
+.copy-heart {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 90px;
+    color: #ff4d6d;
+    text-shadow: 0 0 25px rgba(255, 77, 109, 0.9);
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.copy-heart.show {
+    opacity: 1;
+    transform: translate(-50%, -65%) scale(1.2);
+}
 
 
 
@@ -311,17 +329,23 @@ animate();
 });
 
 document.addEventListener("copy", () => {
-    document.body.classList.add("copy-active");
+    const heart = document.getElementById("copyHeart");
+
+    heart.classList.add("show");
 
     setTimeout(() => {
-        document.body.classList.remove("copy-active");
-    }, 1500);
+        heart.classList.remove("show");
+    }, 1400);
 });
+
 
 
 
     
 </script>
+
+    <div id="copyHeart" class="copy-heart">💖</div>
+
 
 </body>
 </html>

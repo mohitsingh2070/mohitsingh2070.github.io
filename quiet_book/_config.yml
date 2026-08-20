@@ -1,7 +1,7 @@
 title: "Quiet Notes"
 description: "A small place for stories, poems, and things worth keeping."
-url: ""
-baseurl: ""
+url: "https://mohitsingh2070.github.io"
+baseurl: "/quiet_book"
 
 markdown: kramdown
 theme: null

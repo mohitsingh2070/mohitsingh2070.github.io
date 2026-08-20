@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Private responses</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<header class="site-header"><div class="shell nav">
+  <a class="brand" href="index.html">Private responses</a>
+</div></header>
+
+<main class="shell">
+  <section class="page-header">
+    <p class="eyebrow">Private area</p>
+    <h1>Responses</h1>
+    <p>Only your authenticated admin account can read these.</p>
+  </section>
+
+  <section id="login">
+    <form id="login-form" class="response-box">
+      <label for="email">Your admin email</label>
+      <input id="email" type="email" required>
+      <button class="button" type="submit">Send sign-in link</button>
+      <p id="login-status"></p>
+    </form>
+  </section>
+
+  <section id="dashboard" hidden>
+    <div id="responses"></div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

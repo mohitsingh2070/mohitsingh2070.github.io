@@ -1,0 +1,44 @@
+---
+layout: default
+---
+
+<article class="post">
+  <header class="post-header">
+    <a class="back" href="{{ '/archive/' | relative_url }}">← Archive</a>
+    <div class="post-meta">
+      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%d %B %Y" }}</time>
+      {% if page.category %}<span>·</span><span>{{ page.category }}</span>{% endif %}
+    </div>
+    <h1>{{ page.title }}</h1>
+    {% if page.subtitle %}<p class="subtitle">{{ page.subtitle }}</p>{% endif %}
+  </header>
+
+  <div class="prose">
+    {{ content }}
+  </div>
+
+  <section class="response-box" data-post-slug="{{ page.slug }}">
+    <div class="section-label">A small door</div>
+    <h2>If you ever want to leave a thought</h2>
+    <p>
+      You don't have to. This is here only if you feel like writing something.
+      Responses are private and are saved for the author.
+    </p>
+
+    <form id="response-form">
+      <label for="response-name">Name <span>(optional)</span></label>
+      <input id="response-name" name="name" maxlength="80" autocomplete="off" placeholder="You can leave this blank">
+
+      <label for="response-message">Your thought</label>
+      <textarea id="response-message" name="message" maxlength="4000" required placeholder="Write whatever you want..."></textarea>
+
+      <div class="form-row">
+        <button class="button" type="submit">Leave it here</button>
+        <span id="response-status" role="status"></span>
+      </div>
+    </form>
+  </section>
+</article>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="{{ '/assets/js/comments.js' | relative_url }}"></script>

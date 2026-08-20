@@ -1,0 +1,25 @@
+title: "Quiet Notes"
+description: "A small place for stories, poems, and things worth keeping."
+url: ""
+baseurl: ""
+
+markdown: kramdown
+theme: null
+permalink: /notes/:year/:month/:day/:title/
+
+collections:
+  notes:
+    output: true
+    permalink: /notes/:name/
+
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+  - scope:
+      path: ""
+      type: "notes"
+    values:
+      layout: "post"

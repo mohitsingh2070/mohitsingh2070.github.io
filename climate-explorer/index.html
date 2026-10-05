@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Climate Data Explorer</title>
+  <meta name="description" content="Open NetCDF climate data (CMIP, ERA5, reanalyses) in the browser and map it: climatologies, anomalies, trends and time series.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%233b6fb6'/><path d='M4 14c5-3 9 3 14 0s8-3 10 0v8c-3-2-6-1-10 1s-9-1-14 0z' fill='%23c4473a'/></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#3b6fb6"/><path d="M4 14c5-3 9 3 14 0s8-3 10 0v8c-3-2-6-1-10 1s-9-1-14 0z" fill="#c4473a"/></svg>
+    <div><b>Climate Data Explorer</b><span>Open climate data files and map them — right in your browser</span></div>
+  </div>
+  <nav>
+    <button id="btnGuide" class="ghost">Guide</button>
+    <button id="btnCsv" class="ghost needs-map">Map data (CSV)</button>
+    <button id="btnPng" class="needs-map">Download PNG</button>
+    <button id="btnPrint">Print</button>
+  </nav>
+</header>
+
+<div class="layout">
+  <aside class="side">
+    <section class="card">
+      <h2><span class="num">1</span> Data</h2>
+      <div id="drop" class="drop">
+        <label class="btn primary">Choose a file…<input type="file" id="file" accept=".nc,.nc4,.netcdf,.cdf,.h5,.hdf5,.he5,.csv,.txt,.tsv" hidden></label>
+        <div>or drag &amp; drop it here</div>
+        <small>NetCDF-3 / NetCDF-4 (.nc) from CMIP, ERA5, NCEP, … or a CSV time series. Your file never leaves your computer.</small>
+      </div>
+      <label class="stack">Or open a sample dataset
+        <select id="sample"><option value="">— choose a sample —</option></select>
+      </label>
+      <div id="fileInfo" class="muted small"></div>
+    </section>
+
+    <section class="card needs-file needs-nc">
+      <h2><span class="num">2</span> Variable</h2>
+      <select id="var" aria-label="Variable"></select>
+      <div id="varDesc" class="muted small"></div>
+      <div id="extraDims" class="stackgrid"></div>
+      <label class="stack" id="unitsRow">Units <select id="units"></select></label>
+    </section>
+
+    <section class="card needs-file needs-map needs-nc">
+      <h2><span class="num">3</span> What to show</h2>
+      <div class="seg" id="mode">
+        <button data-mode="single">One month</button>
+        <button data-mode="mean">Average</button>
+        <button data-mode="trend">Trend</button>
+        <button data-mode="std">Variability</button>
+      </div>
+      <p id="modeHelp" class="hint"></p>
+
+      <div class="only-single needs-time">
+        <div class="timerow">
+          <button id="prev" class="icon" title="Previous time step">‹</button>
+          <input type="range" id="tslider" min="0" max="0" value="0" aria-label="Time step">
+          <button id="next" class="icon" title="Next time step">›</button>
+        </div>
+        <div class="timerow2">
+          <b id="tlabel">—</b>
+          <span class="grow"></span>
+          <select id="speed" title="Animation speed"><option value="2">slow</option><option value="5" selected>normal</option><option value="12">fast</option></select>
+          <button id="play">▶ Play</button>
+        </div>
+      </div>
+
+      <div class="only-period">
+        <div id="monthBox">
+          <div class="lbl">Months <span id="monthsLabel" class="muted"></span></div>
+          <div id="months" class="months"></div>
+          <div id="presets" class="presets"></div>
+        </div>
+        <div class="row">Years <input id="y0" type="number" step="1"> to <input id="y1" type="number" step="1"> <span id="yearsRange" class="muted small"></span></div>
+      </div>
+
+      <div class="no-trend">
+        <label class="check"><input type="checkbox" id="anom"><span>Show as <b>anomaly</b> (difference from a baseline average)</span></label>
+      </div>
+      <div class="row only-anom-or-ts">Baseline <input id="b0" type="number" step="1"> to <input id="b1" type="number" step="1"></div>
+    </section>
+
+    <section class="card needs-file needs-map needs-nc">
+      <h2><span class="num">4</span> Map style</h2>
+      <div class="grid2">
+        <label class="stack">Region <select id="region"></select></label>
+        <label class="stack">Projection
+          <select id="proj">
+            <option value="robinson">Robinson (world)</option>
+            <option value="equirect">Rectangular lat/lon</option>
+            <option value="mollweide">Mollweide (equal area)</option>
+            <option value="ortho">Globe (drag to spin)</option>
+            <option value="npolar">North polar</option>
+            <option value="spolar">South polar</option>
+          </select>
+        </label>
+      </div>
+      <div class="row only-custom">Box W <input id="bw" type="number" step="any" value="60"> E <input id="be" type="number" step="any" value="100"> S <input id="bs" type="number" step="any" value="0"> N <input id="bn" type="number" step="any" value="40"></div>
+      <label class="stack">Map centred on
+        <select id="center"><option value="0">0° (Greenwich / Africa–Europe)</option><option value="180">180° (Pacific)</option><option value="80">80°E (India)</option></select>
+      </label>
+      <div class="grid2">
+        <label class="stack">Colours <select id="cmap"></select></label>
+        <label class="stack">Steps
+          <select id="levels"><option value="0">smooth</option><option value="8">8 levels</option><option value="10">10 levels</option><option value="12" selected>12 levels</option><option value="16">16 levels</option><option value="20">20 levels</option></select>
+        </label>
+      </div>
+      <div class="grid2">
+        <label class="stack">Range
+          <select id="range"><option value="auto">Auto</option><option value="sym">Auto, centred on 0</option><option value="manual">Fixed (type below)</option></select>
+        </label>
+        <div class="stack"><span>&nbsp;</span><div class="row tight only-manual">min <input id="vmin" type="number" step="any"> max <input id="vmax" type="number" step="any"></div></div>
+      </div>
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="reverse"> Reverse colours</label>
+        <label class="check"><input type="checkbox" id="smooth" checked> Smooth shading</label>
+        <label class="check"><input type="checkbox" id="coast" checked> Coastlines</label>
+        <label class="check"><input type="checkbox" id="borders"> Country borders</label>
+        <label class="check"><input type="checkbox" id="gridlines" checked> Lat/lon grid</label>
+        <label class="check"><input type="checkbox" id="contours"> Contour lines</label>
+      </div>
+    </section>
+  </aside>
+
+  <main>
+    <section class="card mapcard needs-map">
+      <div class="figtitle">
+        <h1 id="mapTitle">Open a climate data file to begin</h1>
+        <p id="mapSub">Choose a file on the left, or pick one of the sample datasets.</p>
+      </div>
+      <div class="mapwrap">
+        <div id="map"></div>
+        <div id="maptip" class="tip"></div>
+      </div>
+      <div class="cbarwrap"><canvas id="cbar" height="62"></canvas></div>
+      <div class="statusline"><span id="stats"></span><span id="hover" class="muted"></span></div>
+      <div id="progress" class="progress"><div></div><span></span></div>
+      <p class="hint center">Hover for values · <b>click</b> a point for its time series · <b>drag a box</b> to zoom in · on the globe, drag to rotate</p>
+    </section>
+
+    <section class="card" id="tsPanel">
+      <div class="tabs">
+        <button data-tab="ts" class="active">Time series</button>
+        <button data-tab="zonal" class="needs-map">Zonal mean</button>
+        <button data-tab="info">File contents</button>
+        <button data-tab="guide">Guide</button>
+      </div>
+
+      <div class="tabpane active" id="tab-ts">
+        <div class="toolbar">
+          <label class="needs-map nocsv">From <select id="tsSource"></select></label>
+          <label class="csvonly">Column <select id="csvCol"></select></label>
+          <label>Style <select id="tsStyle"><option value="line">Line</option><option value="bars">Bars (above/below)</option><option value="stripes">Climate stripes</option></select></label>
+          <label class="check"><input type="checkbox" id="tsAnom"> Anomaly</label>
+          <label class="check"><input type="checkbox" id="tsSmooth" checked> Running mean</label>
+          <label class="check"><input type="checkbox" id="tsTrend"> Trend line</label>
+          <span class="grow"></span>
+          <button id="tsCSV" class="ghost small">CSV</button>
+          <button id="tsPNG" class="ghost small">PNG</button>
+        </div>
+        <div id="tsChart" class="chart"><p class="muted">Load a file, then click on the map to see how the value at that point changes over time.</p></div>
+      </div>
+
+      <div class="tabpane" id="tab-zonal">
+        <div class="toolbar"><span class="muted small">Average of the current map along each line of latitude.</span><span class="grow"></span>
+          <button id="zCSV" class="ghost small">CSV</button><button id="zPNG" class="ghost small">PNG</button></div>
+        <div id="zonalChart" class="chart"></div>
+      </div>
+
+      <div class="tabpane" id="tab-info">
+        <p class="muted small">Everything stored in the file: its <b>dimensions</b> (the axes of the data), <b>variables</b> and <b>attributes</b> (metadata such as units). This is what the command <code>ncdump -h file.nc</code> prints.</p>
+        <pre id="ncdump">No file loaded.</pre>
+      </div>
+
+      <div class="tabpane guide" id="tab-guide">
+        <div class="guidecols">
+          <div>
+            <h3>What is in a climate data file?</h3>
+            <p>Most climate data comes as <b>NetCDF</b> files (<code>.nc</code>). A file holds one or more <b>variables</b> (e.g. temperature <code>tas</code>, precipitation <code>pr</code>) stored on a grid of <b>dimensions</b>: usually <em>time × latitude × longitude</em>, sometimes also a vertical <em>level</em>. Each grid box holds one number. The <b>attributes</b> say what the numbers mean (units, long name, missing-value flag).</p>
+            <h3>Where does the data come from?</h3>
+            <ul>
+              <li><b>Reanalysis</b> (ERA5, NCEP/NCAR, MERRA-2): past weather observations blended with a weather model, giving a complete, gridded picture of the atmosphere for every month since the 1940s–1970s.</li>
+              <li><b>Observational products</b> (GPCP rain, ERSST sea-surface temperature): built mostly from satellites, ships, buoys and rain gauges.</li>
+              <li><b>Climate models</b> (CMIP6, CMIP7): simulations of the climate system. <em>historical</em> runs cover 1850–2014; <em>scenario</em> runs (SSP1-2.6 … SSP5-8.5) project the future.</li>
+            </ul>
+            <h3>The four views</h3>
+            <ul>
+              <li><b>One month</b> — a single snapshot. Press ▶ to animate through time.</li>
+              <li><b>Average</b> — the mean over selected months and years. A 30-year average is called a <b>climatology</b> (“normal” climate).</li>
+              <li><b>Trend</b> — how fast things change, from a straight-line fit through the yearly means (units per decade).</li>
+              <li><b>Variability</b> — how much one year differs from the next (standard deviation).</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Anomalies and baselines</h3>
+            <p>An <b>anomaly</b> is the difference from a reference average, the <b>baseline</b> (by default 1991–2020, the current WMO normal period). Anomalies remove the big, expected patterns (tropics are hot, poles are cold, summers are warmer than winters) so the unusual part stands out: El Niño, heat waves, droughts, long-term warming. Blue = below normal, red = above normal.</p>
+            <h3>Things to try</h3>
+            <ul>
+              <li><b>Sea surface temperature</b> sample → One month → Dec 1997 or Dec 2015 → tick <em>anomaly</em>, region <em>Tropical Pacific</em>: a strong El Niño.</li>
+              <li><b>Precipitation</b> → Average → months <em>JJAS (monsoon)</em> → region <em>South Asia</em>: the Indian summer monsoon.</li>
+              <li><b>Air temperature</b> → Trend → Annual, 1979–2024: where is it warming fastest? Then click the Arctic.</li>
+              <li><b>Time series</b> → From <em>Niño 3.4</em>, Anomaly, Bars: the history of El Niño and La Niña.</li>
+              <li>Switch on <em>Climate stripes</em> for a global-average temperature series.</li>
+            </ul>
+            <h3>Getting your own data</h3>
+            <ul>
+              <li><b>ERA5</b>: <a href="https://cds.climate.copernicus.eu/" target="_blank" rel="noopener">Copernicus Climate Data Store</a> — choose <em>NetCDF</em> as the format.</li>
+              <li><b>CMIP6</b>: <a href="https://aims2.llnl.gov/search/cmip6/" target="_blank" rel="noopener">ESGF search</a> — monthly <em>Amon</em> tables (tas, pr, psl …).</li>
+              <li><b>NOAA PSL</b>: <a href="https://psl.noaa.gov/data/gridded/" target="_blank" rel="noopener">gridded datasets</a> (where the samples come from).</li>
+            </ul>
+            <h3>Tips for big or awkward files</h3>
+            <p>The browser keeps the whole file in memory, so keep files below ~1 GB. Cut them down with <a href="https://code.mpimet.mpg.de/projects/cdo" target="_blank" rel="noopener">CDO</a>:</p>
+            <pre>cdo sellonlatbox,60,100,0,40 in.nc region.nc      # a lat/lon box
+cdo selyear,1980/2020 in.nc years.nc               # some years
+cdo monmean daily.nc monthly.nc                    # daily → monthly
+cdo remapbil,r360x180 ocean_model.nc regular.nc    # curvilinear → 1° grid
+cdo -f nc copy era5.grib era5.nc                   # GRIB → NetCDF</pre>
+          </div>
+        </div>
+      </div>
+      <div class="printopts"><span class="muted small">Include when printing:</span>
+        <label class="check small"><input type="checkbox" id="printTS" checked> time series</label>
+        <label class="check small"><input type="checkbox" id="printZonal"> zonal mean</label>
+      </div>
+    </section>
+    <footer class="foot muted small">
+      Coastlines and borders: Natural Earth (borders as per India's official point of view). Sample data: NOAA PSL (NCEP/NCAR Reanalysis 1, GPCP v2.3, ERSST v5). Runs entirely in your browser — nothing is uploaded.
+    </footer>
+  </main>
+</div>
+
+<div id="printArea"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="lib/d3.min.js"></script>
+<script src="lib/d3-geo-projection.min.js"></script>
+<script src="lib/topojson-client.min.js"></script>
+<script src="lib/world-data.js"></script>
+<script src="js/ncreader.js"></script>
+<script src="js/cftime.js"></script>
+<script src="js/colormaps.js"></script>
+<script src="js/map.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

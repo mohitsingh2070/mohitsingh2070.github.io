@@ -16,13 +16,14 @@ so the tool can be hosted on any static web host, including GitHub Pages.
 - **Converts units:** K → °C, kg m⁻² s⁻¹ → mm/day, Pa → hPa, ERA5 metres → mm, geopotential → height.
 - **Has four map views:** one month (with ▶ animation), an average over chosen months and years (climatology),
   a linear trend per decade, and year-to-year variability (standard deviation). Each view can also be shown as an **anomaly** against a
-  baseline period (default 1991–2020).
+  baseline period (default 1991–2020). The baseline follows standard practice for each time resolution: the same calendar month for monthly data, the same calendar day ±7 days for daily data, and additionally the same hour for sub-daily data. A ⚠ warning appears when less than 80% of the baseline years have data.
 - **Offers map options:** Robinson, rectangular, Mollweide, a globe you can spin, and north/south polar views. There are region presets
   (South Asia, Tropical Pacific, …) and you can drag a box to zoom. Coastlines, country borders, a lat/lon grid and contour lines can be switched on,
   and there are perceptually even colour scales with smooth or stepped shading.
 - **Draws time series** at a clicked point or averaged over a region (global, hemispheres, Niño 3.4, IOD, India box,
-  current map area), as a line, ± bars or climate stripes, with a running mean and a trend line.
+  current map area), as a line, ± bars or climate stripes, with a running mean and a trend line. The time axis is calendar-aware (years → months → days → hours, including 365-day and 360-day model calendars), never crowds its labels, and you can drag across the chart to zoom in.
 - **Plots the zonal mean** of the current map.
+- **Uses the visible area for the automatic colour range.** When you zoom into a region, the colours stretch over the values in that region.
 - **Shows file contents** in the same form as `ncdump -h`, so students can see what is inside the file.
 - **Exports** the map as a PNG (with title and colour bar), the map data as CSV, and charts as PNG/CSV. A Print button prints
   just the figures.

@@ -159,10 +159,10 @@
           <label class="check"><input type="checkbox" id="tsSmooth" checked> Running mean</label>
           <label class="check"><input type="checkbox" id="tsTrend"> Trend line</label>
           <span class="grow"></span>
-          <button id="tsCSV" class="ghost small">CSV</button>
-          <button id="tsPNG" class="ghost small">PNG</button>
+          <span class="btngroup"><button id="tsReset" class="ghost small" hidden>Reset zoom</button><button id="tsCSV" class="ghost small">CSV</button><button id="tsPNG" class="ghost small">PNG</button></span>
         </div>
         <div id="tsChart" class="chart"><p class="muted">Load a file, then click on the map to see how the value at that point changes over time.</p></div>
+        <p class="hint">Drag across the chart to zoom into a period · double-click or “Reset zoom” to zoom out.</p>
       </div>
 
       <div class="tabpane" id="tab-zonal">
@@ -198,6 +198,14 @@
           <div>
             <h3>Anomalies and baselines</h3>
             <p>An <b>anomaly</b> is the difference from a reference average, the <b>baseline</b> (by default 1991–2020, the current WMO normal period). Anomalies remove the big, expected patterns (tropics are hot, poles are cold, summers are warmer than winters) so the unusual part stands out: El Niño, heat waves, droughts, long-term warming. Blue = below normal, red = above normal.</p>
+            <p>How the baseline “normal” is worked out depends on the time resolution of the data. These are the usual conventions:</p>
+            <ul>
+              <li><b>Yearly data</b>: the average of the baseline years.</li>
+              <li><b>Monthly data</b>: the average of the <em>same calendar month</em> in the baseline years, so a July is compared with other Julys.</li>
+              <li><b>Daily data</b>: the average of the <em>same calendar day ±7 days</em> over all baseline years (a 15-day window, about 450 days for a 30-year baseline). This gives a smooth seasonal cycle instead of a noisy one. 29 February is treated as 28 February.</li>
+              <li><b>Hourly data</b>: as for daily, but using only the <em>same hour of the day</em>, so the day–night cycle is removed as well.</li>
+            </ul>
+            <p>Averages of monthly data are weighted by the number of days in each month. Trends and year-to-year variability use only complete years or seasons. If the baseline has data for fewer than 80% of its years, a ⚠ warning is shown. Records shorter than 30 years use their own first years as the baseline.</p>
             <h3>Things to try</h3>
             <ul>
               <li><b>Sea surface temperature</b> sample → One month → Dec 1997 or Dec 2015 → tick <em>anomaly</em>, region <em>Tropical Pacific</em>: a strong El Niño.</li>
@@ -205,6 +213,7 @@
               <li><b>Air temperature</b> → Trend → Annual, 1979–2024: where is it warming fastest? Then click the Arctic.</li>
               <li><b>Time series</b> → From <em>Niño 3.4</em>, Anomaly, Bars: the history of El Niño and La Niña.</li>
               <li>Switch on <em>Climate stripes</em> for a global-average temperature series.</li>
+              <li>In any time series, <b>drag across the chart</b> to zoom in on a few years, months or days. The axis switches to months, days or hours. Double-click to zoom out.</li>
             </ul>
             <h3>Getting your own data</h3>
             <ul>

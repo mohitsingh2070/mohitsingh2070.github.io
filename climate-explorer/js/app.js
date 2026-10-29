@@ -65,9 +65,9 @@
   async function loadBuffer(buf, name) {
     stopPlay();
     if (S.ds) { try { S.ds.close(); } catch (e) { /* ignore */ } }
-    S.ds = null; S.csv = null; S.cache.clear(); S.tsCache.clear(); S.click = null;
+    S.ds = null; S.csv = null; S.cache.clear(); S.tsCache.clear(); S.click = null; S.field = null;
     S.fileName = name;
-    if (/\.(csv|txt|tsv)$/i.test(name)) return loadCSV(new TextDecoder().decode(buf), name);
+    if (/\.(csv|txt|tsv)$/i.test(name)) { setProgress(null); return loadCSV(new TextDecoder().decode(buf), name); }
     setProgress(0.3, 'Reading ' + name + ' …');
     await nextFrame();
     try {
@@ -214,7 +214,7 @@
       const tv = coordVar(baseName(roles.time));
       const vals = tv ? ds.read(tv.name) : Float64Array.from({ length: ds.dims[baseName(roles.time)] || v.shape[v.dims.indexOf(roles.time)] }, (_, i) => i);
       const dec = tv ? CFTime.decode(vals, attr(tv, 'units'), attr(tv, 'calendar')) : { ok: false };
-      if (dec.ok) S.time = { n: vals.length, steps: dec.steps, freq: dec.freq, calendar: dec.calendar, ok: true };
+      if (dec.ok) S.time = { n: vals.length, steps: dec.steps, freq: dec.freq, stepDays: dec.stepDays, calendar: dec.calendar, ok: true };
       else S.time = { n: vals.length, steps: Array.from(vals, (x, i) => ({ label: 'step ' + i, dec: i })), freq: 'unknown', ok: false };
     }
 
@@ -378,17 +378,23 @@
     S.time.steps.forEach((s, i) => { if (months.has(s.m)) { const sy = seasonYear(s, si); if (sy >= y0 && sy <= y1) out.push(i); } });
     return out;
   }
-  /** group indices into complete seasons/years: Map seasonYear -> indices */
+  /**
+   * Group time steps into seasons/years (Map seasonYear -> {idx}). Only complete groups are kept:
+   * every selected month present and at least 90% of the usual number of time steps (e.g. days).
+   */
   function yearlyGroups(months, y0, y1) {
     const si = seasonInfo(months);
     const groups = new Map();
     S.time.steps.forEach((s, i) => {
       if (!months.has(s.m)) return;
-      const sy = seasonYear(s, si); if (sy < y0 || sy > y1) return;
+      const sy = seasonYear(s, si);
       if (!groups.has(sy)) groups.set(sy, { idx: [], months: new Set() });
       const gr = groups.get(sy); gr.idx.push(i); gr.months.add(s.m);
     });
-    for (const [y, gr] of groups) if (gr.months.size < months.size) groups.delete(y); // incomplete season
+    const typical = d3.median([...groups.values()].filter(g => g.months.size === months.size), g => g.idx.length) || 0;
+    for (const [y, gr] of groups) {
+      if (y < y0 || y > y1 || gr.months.size < months.size || gr.idx.length < 0.9 * typical) groups.delete(y);
+    }
     return groups;
   }
   function monthsLabel(months) {
@@ -404,14 +410,33 @@
     return [...months].sort((a, b) => a - b).map(x => MONTHS[x - 1]).join(', ');
   }
 
+  // Daily climatologies pool the same calendar day ±7 days over all baseline years (a 15-day window):
+  // enough samples (~450 for a 30-year baseline) while flattening the seasonal cycle by only ~0.3%.
+  const CLIM_HALF_WINDOW = 7;
+
+  /** Averaging weight of a time step: monthly values are weighted by the number of days in the month. */
+  function stepWeight(i) {
+    const t = S.time;
+    if (!t || !t.ok || (t.freq !== 'monthly')) return 1;
+    const s = t.steps[i];
+    return CFTime.daysInMonth(s.y, s.m, t.calendar);
+  }
+  /** WMO-style completeness check: does the baseline have data in at least 80% of its years? */
+  function baselineNote(indices, steps) {
+    const want = S.b1 - S.b0 + 1;
+    const have = new Set(indices.map(i => steps[i].y).filter(y => y >= S.b0 && y <= S.b1)).size;
+    return have < 0.8 * want ? ` ⚠ baseline has data for only ${have} of ${want} years` : '';
+  }
+
   // ------------------------------------------------------------------ calculations
   class Cancelled extends Error {}
   async function meanOf(indices, my, what) {
     const g = S.grid, n = g.nlat * g.nlon;
-    const sum = new Float64Array(n), cnt = new Uint32Array(n);
+    const sum = new Float64Array(n), cnt = new Float64Array(n);
     for (let k = 0; k < indices.length; k++) {
       const f = readField(indices[k]);
-      for (let p = 0; p < n; p++) { const x = f[p]; if (x === x) { sum[p] += x; cnt[p]++; } }
+      const w = stepWeight(indices[k]);
+      for (let p = 0; p < n; p++) { const x = f[p]; if (x === x) { sum[p] += w * x; cnt[p] += w; } }
       if (k % 6 === 5) {
         setProgress((k + 1) / indices.length, `${what}: ${k + 1} / ${indices.length} time steps`);
         await nextFrame();
@@ -423,16 +448,50 @@
     return out;
   }
   const climCache = new Map();
-  async function baselineMean(months, my) {
-    const key = `${S.vn}|${JSON.stringify(S.other)}|${S.unitIdx}|${[...months].sort().join(',')}|${S.b0}-${S.b1}`;
+  async function cachedMean(tag, idx, my, what) {
+    const key = `${S.vn}|${JSON.stringify(S.other)}|${S.unitIdx}|${S.b0}-${S.b1}|${tag}`;
     if (climCache.has(key)) return climCache.get(key);
-    const idx = indicesFor(months, S.b0, S.b1);
-    if (!idx.length) throw new Error(`No data in the baseline period ${S.b0}–${S.b1}. Change the baseline years.`);
-    const m = await meanOf(idx, my, `Baseline ${S.b0}–${S.b1}`);
+    if (!idx.length) throw new Error(`No data in the baseline period ${S.b0}–${S.b1}. Choose baseline years inside the data range.`);
+    const m = await meanOf(idx, my, what);
     climCache.set(key, m);
-    if (climCache.size > 40) climCache.delete(climCache.keys().next().value);
+    if (climCache.size > 60) climCache.delete(climCache.keys().next().value);
     return m;
   }
+  /** Baseline mean over the same months (used for period-average anomalies). */
+  async function baselineMean(months, my) {
+    const idx = indicesFor(months, S.b0, S.b1);
+    return { field: await cachedMean('months:' + [...months].sort((a, b) => a - b).join(','), idx, my, `Baseline ${S.b0}–${S.b1}`), idx };
+  }
+  /**
+   * Climatology for one time step, following standard practice for each time resolution:
+   *   yearly          -> baseline mean
+   *   monthly/season  -> same calendar month in the baseline years
+   *   daily/weekly    -> same calendar day, pooled over a 15-day window (±7 days) across the baseline years
+   *   sub-daily       -> as daily, but only the same hour of day (removes the daily cycle too)
+   */
+  function climatologySpec(ti) {
+    const t = S.time, st = t.steps[ti], f = t.freq, steps = t.steps;
+    const inBase = s => s.y >= S.b0 && s.y <= S.b1;
+    if (f === 'yearly' || f === 'multiyear' || f === 'single') {
+      return { tag: 'all', idx: steps.map((s, i) => i).filter(i => inBase(steps[i])), desc: `${S.b0}–${S.b1} average` };
+    }
+    if (f === 'monthly' || f === 'seasonal') {
+      return { tag: 'm' + st.m, idx: steps.map((s, i) => i).filter(i => steps[i].m === st.m && inBase(steps[i])), desc: `${MONTHS[st.m - 1]} ${S.b0}–${S.b1} average` };
+    }
+    const cal = t.calendar, P = CFTime.dayPeriod(cal), D = CFTime.dayIndex(st, cal);
+    const minute = s => Math.round((s.H || 0) * 60) % 1440;
+    const hm = f === 'subdaily' ? minute(st) : null;
+    const idx = [];
+    steps.forEach((s, i) => {
+      if (!inBase(s)) return;
+      if (hm !== null && minute(s) !== hm) return;
+      const dd = Math.abs(CFTime.dayIndex(s, cal) - D);
+      if (Math.min(dd, P - dd) <= CLIM_HALF_WINDOW) idx.push(i);
+    });
+    const hh = hm !== null ? ` ${String(Math.floor(hm / 60)).padStart(2, '0')}:${String(hm % 60).padStart(2, '0')}` : '';
+    return { tag: `d${D}h${hm}`, idx, desc: `${S.b0}–${S.b1} climatology for ${st.d} ${MONTHS[st.m - 1]}${hh} (15-day window)` };
+  }
+
   async function yearlyStats(kind, my) {
     const groups = yearlyGroups(S.months, S.y0, S.y1);
     const years = [...groups.keys()].sort((a, b) => a - b);
@@ -443,15 +502,15 @@
     let done = 0;
     for (const y of years) {
       const idx = groups.get(y).idx;
-      const sum = new Float64Array(n), c = new Uint16Array(n);
+      const sum = new Float64Array(n), c = new Float64Array(n), nv = new Uint32Array(n);
       for (const i of idx) {
-        const f = readField(i);
-        for (let p = 0; p < n; p++) { const x = f[p]; if (x === x) { sum[p] += x; c[p]++; } }
+        const f = readField(i), w = stepWeight(i);
+        for (let p = 0; p < n; p++) { const x = f[p]; if (x === x) { sum[p] += w * x; c[p] += w; nv[p]++; } }
         if (++done % 6 === 0) { setProgress(done / total, `${kind === 'trend' ? 'Trend' : 'Variability'}: ${done} / ${total} time steps`); await nextFrame(); if (my !== computeToken) throw new Cancelled(); }
       }
       const x = y - years[0];
       for (let p = 0; p < n; p++) {
-        if (c[p] < idx.length) continue; // need the whole season at this point
+        if (nv[p] < 0.9 * idx.length) continue; // this point needs (almost) the whole season
         const val = sum[p] / c[p];
         cnt[p]++;
         const d = val - mean[p]; mean[p] += d / cnt[p]; m2[p] += d * (val - mean[p]);
@@ -485,13 +544,12 @@
         field = readField(ti);
         sub = t ? t.steps[ti].label : '';
         if (S.anom && t && t.ok) {
-          const m = t.steps[ti].m;
-          const months = t.freq === 'yearly' || t.freq === 'multiyear' ? new Set(d3.range(1, 13)) : new Set([m]);
-          const base = await baselineMean(months, my);
+          const spec = climatologySpec(ti);
+          const base = await cachedMean(spec.tag, spec.idx, my, `Baseline climatology ${S.b0}–${S.b1}`);
           const a = new Float32Array(field.length);
           for (let p = 0; p < a.length; p++) a[p] = field[p] - base[p];
           field = a; kind = 'anom';
-          sub += ` — anomaly vs ${months.size === 12 ? '' : MONTHS[m - 1] + ' '}${S.b0}–${S.b1} average`;
+          sub += ` — anomaly vs ${spec.desc}${baselineNote(spec.idx, t.steps)}`;
         }
       } else if (mode === 'mean') {
         const idx = indicesFor(S.months, S.y0, S.y1);
@@ -501,9 +559,9 @@
         if (S.anom) {
           const base = await baselineMean(S.months, my);
           const a = new Float32Array(field.length);
-          for (let p = 0; p < a.length; p++) a[p] = field[p] - base[p];
+          for (let p = 0; p < a.length; p++) a[p] = field[p] - base.field[p];
           field = a; kind = 'anom';
-          sub += ` — anomaly vs ${S.b0}–${S.b1}`;
+          sub += ` — anomaly vs ${monthsLabel(S.months)} ${S.b0}–${S.b1} average${baselineNote(base.idx, t.steps)}`;
         }
       } else {
         const r = await yearlyStats(mode, my);
@@ -557,10 +615,17 @@
     if (fl === 'cloud') return 'Greys';
     return 'viridis';
   }
-  function autoRange(field, symmetric) {
+  /** Colour range from the 2nd–98th percentile of the values that are actually on screen. */
+  function autoRange(field, symmetric, cells) {
     let vals = [];
-    const step = Math.max(1, Math.floor(field.length / 200000));
-    for (let p = 0; p < field.length; p += step) if (field[p] === field[p]) vals.push(field[p]);
+    if (cells) {
+      const step = Math.max(1, Math.floor(cells.idx.length / 200000));
+      for (let k = 0; k < cells.idx.length; k += step) { const x = field[cells.idx[k]]; if (x === x) vals.push(x); }
+    }
+    if (!vals.length) {
+      const step = Math.max(1, Math.floor(field.length / 200000));
+      for (let p = 0; p < field.length; p += step) if (field[p] === field[p]) vals.push(field[p]);
+    }
     if (!vals.length) return [0, 1];
     vals.sort((a, b) => a - b);
     const q = f => vals[Math.min(vals.length - 1, Math.floor(f * (vals.length - 1)))];
@@ -576,17 +641,18 @@
     const meta = S.fieldMeta;
     if (S.cmapAuto) $('cmap').value = autoCmap(meta.kind);
     const rangeMode = $('range').value;
+    const style = currentStyle();
+    const cells = viewCells(style);
     let vmin, vmax;
     if (rangeMode === 'manual') {
       vmin = parseFloat($('vmin').value); vmax = parseFloat($('vmax').value);
-      if (!(vmax > vmin)) { [vmin, vmax] = autoRange(S.field, false); }
+      if (!(vmax > vmin)) { [vmin, vmax] = autoRange(S.field, false, cells); }
     } else {
       const sym = rangeMode === 'sym' || ((meta.kind === 'anom' || meta.kind === 'trend' || varFlavor() === 'signed') && rangeMode === 'auto');
-      [vmin, vmax] = autoRange(S.field, sym);
+      [vmin, vmax] = autoRange(S.field, sym, cells);
       if (meta.kind === 'std') vmin = 0;
       $('vmin').value = +vmin.toPrecision(5); $('vmax').value = +vmax.toPrecision(5);
     }
-    const style = currentStyle();
     if (style.levels > 0 && rangeMode === 'manual') {
       // keep the typed range, but use round level steps when they divide it evenly
       const step = d3.tickStep(vmin, vmax, style.levels), k = (vmax - vmin) / step;
@@ -657,6 +723,22 @@
     }
     return { idx: Int32Array.from(out), w: Float64Array.from(w) };
   }
+  /** lon/lat box that is visible on the map (null = whole globe) */
+  function viewBox(style) {
+    if (style.bbox) return style.bbox;
+    if (style.projection === 'npolar') return [-180, 180, 25, 90];
+    if (style.projection === 'spolar') return [-180, 180, -90, -25];
+    return null;
+  }
+  let cellsCache = { key: null, cells: null };
+  /** grid cells inside the visible area (null when the whole globe is shown) */
+  function viewCells(style) {
+    const b = viewBox(style);
+    if (!b) return null;
+    const key = `${S.vn}|${S.grid.nlat}x${S.grid.nlon}|${b.join(',')}`;
+    if (cellsCache.key !== key) cellsCache = { key, cells: regionCells(b) };
+    return cellsCache.cells.idx.length ? cellsCache.cells : null;
+  }
   function weightedMean(field, cells) {
     let s = 0, ws = 0;
     for (let k = 0; k < cells.idx.length; k++) { const x = field[cells.idx[k]]; if (x === x) { s += x * cells.w[k]; ws += cells.w[k]; } }
@@ -665,12 +747,13 @@
   function updateStats() {
     const f = S.field; if (!f) return;
     const st = mapView.style;
-    const cells = regionCells(st.bbox || [-180, 180, -90, 90]);
+    const vc = viewCells(st);
+    const cells = vc || regionCells([-180, 180, -90, 90]);
     let mn = Infinity, mx = -Infinity;
     for (let k = 0; k < cells.idx.length; k++) { const x = f[cells.idx[k]]; if (x < mn) mn = x; if (x > mx) mx = x; }
     const u = S.fieldMeta.units;
     $('stats').innerHTML = cells.idx.length
-      ? `Area-weighted mean over ${st.bbox ? 'map area' : 'globe'}: <b>${fmt(weightedMean(f, cells))}</b> ${escapeHtml(u)} · min ${fmt(mn)} · max ${fmt(mx)}`
+      ? `Area-weighted mean over ${vc ? 'map area' : 'globe'}: <b>${fmt(weightedMean(f, cells))}</b> ${escapeHtml(u)} · min ${fmt(mn)} · max ${fmt(mx)}`
       : '';
   }
 
@@ -731,24 +814,87 @@
     S.tsCache.set(key, y);
     return y;
   }
+  /** Centred running mean (O(n) with prefix sums); a window needs ≥80% valid values. */
   function runningMean(y, w) {
-    const out = new Float64Array(y.length).fill(NaN);
+    const n = y.length, out = new Float64Array(n).fill(NaN);
+    const cs = new Float64Array(n + 1), cc = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) { const ok = isFinite(y[i]); cs[i + 1] = cs[i] + (ok ? y[i] : 0); cc[i + 1] = cc[i] + (ok ? 1 : 0); }
     const h = Math.floor(w / 2);
-    for (let i = h; i < y.length - (w - h - 1); i++) {
-      let s = 0, c = 0;
-      for (let k = i - h; k < i - h + w; k++) if (isFinite(y[k])) { s += y[k]; c++; }
-      if (c >= w * 0.8) out[i] = s / c;
+    for (let i = h; i + (w - h) <= n; i++) {
+      const a = i - h, b = a + w, c = cc[b] - cc[a];
+      if (c >= w * 0.8) out[i] = (cs[b] - cs[a]) / c;
     }
     return out;
   }
-  function anomalyOf(y, steps, b0, b1) {
-    // subtract the mean seasonal cycle (per calendar month) of the baseline period
-    const sum = new Float64Array(13), cnt = new Float64Array(13);
-    steps.forEach((s, i) => { if (s.y >= b0 && s.y <= b1 && isFinite(y[i])) { sum[s.m] += y[i]; cnt[s.m]++; } });
-    if (!cnt.some(c => c > 0)) return null;
-    return Float64Array.from(y, (v, i) => (cnt[steps[i].m] ? v - sum[steps[i].m] / cnt[steps[i].m] : NaN));
+  /** A running-mean window that suits the sampling interval and the length of the record. */
+  function smoothingFor(freq, stepDays, n, spanYears) {
+    let w, label;
+    const perDay = stepDays > 0 ? Math.max(1, Math.round(1 / stepDays)) : 1;
+    if (freq === 'monthly') { w = 12; label = '12-month'; }
+    else if (freq === 'seasonal') { w = 4; label = '1-year'; }
+    else if (freq === 'yearly' || freq === 'multiyear') { w = 5; label = '5-year'; }
+    else if (freq === 'weekly') { if (spanYears > 3) { w = 52; label = '1-year'; } else { w = 4; label = '4-week'; } }
+    else if (freq === 'daily') {
+      if (spanYears > 3) { w = 365; label = '365-day'; } else if (spanYears > 0.25) { w = 31; label = '31-day'; } else { w = 7; label = '7-day'; }
+    } else if (freq === 'subdaily') {
+      if (spanYears > 3) { w = 365 * perDay; label = '365-day'; } else if (spanYears > 0.25) { w = 31 * perDay; label = '31-day'; } else { w = perDay; label = '24-hour'; }
+    } else { w = 12; label = '12-step'; }
+    if (w < 2 || w > n / 2) return null;
+    return { w, label: `${label} running mean` };
   }
-  function windowFor(freq) { return { monthly: 12, daily: 365, subdaily: 365 * 4, weekly: 52, seasonal: 4, yearly: 5, multiyear: 5 }[freq] || 12; }
+  function defaultBaseline(ya, yb) {
+    if (ya <= 1991 && yb >= 2020) return [1991, 2020];          // current WMO normal
+    if (ya <= 1981 && yb >= 2010) return [1981, 2010];
+    return [ya, Math.min(yb, ya + 29)];                          // short records: first (up to) 30 years
+  }
+
+  /**
+   * Anomalies relative to a baseline climatology, matching the map calculation:
+   *   yearly -> baseline mean; monthly/seasonal -> same calendar month;
+   *   daily/weekly -> same calendar day pooled over a 15-day window; sub-daily -> also the same hour of day.
+   */
+  function anomalyOf(y, steps, b0, b1, freq, cal) {
+    const n = y.length;
+    const used = [];
+    for (let i = 0; i < n; i++) if (steps[i].y >= b0 && steps[i].y <= b1 && isFinite(y[i])) used.push(i);
+    if (!used.length) return { a: null };
+    const out = new Float64Array(n).fill(NaN);
+    let desc;
+    if (freq === 'yearly' || freq === 'multiyear' || freq === 'single' || freq === 'unknown') {
+      const mu = d3.mean(used, i => y[i]);
+      for (let i = 0; i < n; i++) out[i] = y[i] - mu;
+      desc = `${b0}–${b1} average`;
+    } else if (freq === 'monthly' || freq === 'seasonal') {
+      const sum = new Float64Array(13), cnt = new Float64Array(13);
+      for (const i of used) { sum[steps[i].m] += y[i]; cnt[steps[i].m]++; }
+      for (let i = 0; i < n; i++) { const m = steps[i].m; out[i] = cnt[m] ? y[i] - sum[m] / cnt[m] : NaN; }
+      desc = `${b0}–${b1} monthly climatology (seasonal cycle removed)`;
+    } else {
+      const P = CFTime.dayPeriod(cal), sub = freq === 'subdaily';
+      const minute = s => (sub ? Math.round((s.H || 0) * 60) % 1440 : 0);
+      const hk = new Map();
+      for (const i of used) { const mm = minute(steps[i]); if (!hk.has(mm)) hk.set(mm, hk.size); }
+      const nh = hk.size;
+      const sum = new Float64Array(P * nh), cnt = new Float64Array(P * nh);
+      for (const i of used) { const k = CFTime.dayIndex(steps[i], cal) * nh + hk.get(minute(steps[i])); sum[k] += y[i]; cnt[k]++; }
+      const memo = new Map();
+      const clim = (D, h) => {
+        const key = D * nh + h;
+        if (memo.has(key)) return memo.get(key);
+        let s = 0, c = 0;
+        for (let dd = -CLIM_HALF_WINDOW; dd <= CLIM_HALF_WINDOW; dd++) { const k = (((D + dd) % P) + P) % P * nh + h; s += sum[k]; c += cnt[k]; }
+        const v = c ? s / c : NaN; memo.set(key, v); return v;
+      };
+      for (let i = 0; i < n; i++) {
+        const h = hk.get(minute(steps[i]));
+        out[i] = h === undefined ? NaN : y[i] - clim(CFTime.dayIndex(steps[i], cal), h);
+      }
+      desc = `${b0}–${b1} climatology, same calendar day${sub ? ' and hour' : ''} (15-day window; ${sub ? 'seasonal & daily cycles' : 'seasonal cycle'} removed)`;
+    }
+    const want = b1 - b0 + 1, have = new Set(used.map(i => steps[i].y)).size;
+    const note = have < 0.8 * want ? `⚠ baseline has data for only ${have} of ${want} years` : '';
+    return { a: out, desc, note };
+  }
 
   let tsToken = 0;
   async function updateTimeSeries() {
@@ -761,6 +907,7 @@
     if (src === 'point' && !S.click) {
       box.innerHTML = '<p class="muted">Click anywhere on the map to see how the value at that point changes over time — or choose a region average above.</p>';
       mapView.setBox(null);
+      $('tsReset').hidden = true;
       return;
     }
     mapView.setBox(S.grid && src !== 'point' && src !== 'map' && TS_REGIONS[src].bbox && TS_REGIONS[src].bbox[1] - TS_REGIONS[src].bbox[0] < 360 ? TS_REGIONS[src].bbox : null);
@@ -771,34 +918,53 @@
       box.innerHTML = `<p class="err">${escapeHtml(e.message)}</p>`; return;
     }
     if (my !== tsToken) return;
-    const steps = S.time.steps;
+    const t = S.time;
     const where = src === 'point'
       ? `${MapView.latLabel(+S.grid.lat[S.click.i].toFixed(2))}, ${MapView.lonLabel(+S.grid.lon[S.click.j].toFixed(2))} (nearest grid point)`
       : src === 'whole' ? '' : TS_REGIONS[src].label;
     const ln = attr(S.v, 'long_name') || baseName(S.vn);
-    plotSeries({ y, steps, title: `${cap(ln)}${where ? ' — ' + where : ''}`, units: units(), freq: S.time.freq, extraSub: levelText() });
+    plotSeries({
+      y, steps: t.steps, title: `${cap(ln)}${where ? ' — ' + where : ''}`, units: units(), freq: t.freq,
+      stepDays: t.stepDays, calendar: t.calendar || 'standard', baseline: [S.b0, S.b1], extraSub: levelText(),
+    });
   }
 
-  function plotSeries({ y, steps, title, units: u, freq, extraSub }) {
-    const showAnom = $('tsAnom').checked && steps[0].m !== undefined;
-    let vals = y, sub = [];
+  function rawName(freq, stepDays) {
+    if (freq === 'subdaily') { const h = Math.round(stepDays * 24); return h <= 1 ? 'Hourly values' : `${h}-hourly values`; }
+    return { monthly: 'Monthly values', daily: 'Daily values', weekly: 'Weekly values', seasonal: 'Seasonal values', yearly: 'Yearly values' }[freq] || 'Values';
+  }
+
+  function plotSeries(args) {
+    const { y, steps, title, units: u, freq, stepDays, calendar, baseline, extraSub } = args;
+    S.lastPlotArgs = args;
+    // a new series (different variable/place/file) starts zoomed out
+    const zkey = `${title}|${steps.length}|${S.fileName}`;
+    if (zkey !== S.tsZoomKey) { S.tsZoomKey = zkey; S.tsZoom = null; }
+    const timeOk = steps[0] && steps[0].m !== undefined;
+    const showAnom = $('tsAnom').checked && timeOk;
+    let vals = y; const sub = [];
     if (showAnom) {
-      const yrs = [steps[0].y, steps[steps.length - 1].y];
-      let b0 = S.b0 ?? yrs[0], b1 = S.b1 ?? yrs[1];
-      const a = anomalyOf(y, steps, b0, b1);
-      if (a) { vals = a; sub.push(`anomaly vs ${b0}–${b1} (seasonal cycle removed)`); }
+      const [b0, b1] = baseline;
+      const r = anomalyOf(y, steps, b0, b1, freq, calendar);
+      if (r.a) { vals = r.a; sub.push(`anomaly vs ${r.desc}`); if (r.note) sub.push(r.note); }
+      else sub.push(`no data in the baseline years ${b0}–${b1}, so values are shown as they are`);
     }
     if (extraSub) sub.push(extraSub);
     const style = $('tsStyle').value;
-    const series = [{ name: style === 'bars' ? (showAnom ? 'Anomaly' : 'Value') : freq === 'monthly' ? 'Monthly values' : 'Values', y: Array.from(vals), color: style === 'line' && $('tsSmooth').checked ? Charts.COLORS.RAW : Charts.COLORS.SMOOTH, width: style === 'line' && $('tsSmooth').checked ? 1.2 : 1.6 }];
-    if ($('tsSmooth').checked && style !== 'stripes') {
-      const w = windowFor(freq);
-      series.push({ name: `${w}-step running mean${freq === 'monthly' ? ' (12 months)' : ''}`, y: Array.from(runningMean(vals, w)), color: Charts.COLORS.SMOOTH, width: 2.2 });
-    }
+    const smooth = $('tsSmooth').checked && style !== 'stripes'
+      ? smoothingFor(freq, stepDays, vals.length, steps[steps.length - 1].dec - steps[0].dec) : null;
+    const series = [{
+      name: style === 'bars' ? (showAnom ? 'Anomaly' : 'Value') : rawName(freq, stepDays), y: Array.from(vals),
+      color: style === 'line' && smooth ? Charts.COLORS.RAW : Charts.COLORS.SMOOTH, width: style === 'line' && smooth ? 1.2 : 1.6,
+    }];
+    if (smooth) series.push({ name: smooth.label, y: Array.from(runningMean(vals, smooth.w)), color: Charts.COLORS.SMOOTH, width: 2.2 });
+    const weights = freq === 'monthly' && timeOk ? steps.map(s => CFTime.daysInMonth(s.y, s.m, CFTime.normCalendar(calendar))) : null;
     S.lastSeries = { x: steps.map(s => s.dec), labels: steps.map(s => s.label), series, units: u, title };
+    $('tsReset').hidden = !S.tsZoom;
     Charts.timeSeries($('tsChart'), {
       title, subtitle: sub.join(' · '), yLabel: u, x: S.lastSeries.x, labels: S.lastSeries.labels,
-      series, style, trend: $('tsTrend').checked && style !== 'stripes', zero: showAnom, units: u,
+      parts: steps, calendar, weights, series, style, trend: $('tsTrend').checked && style !== 'stripes', zero: showAnom, units: u,
+      domain: S.tsZoom, onZoom: d => { S.tsZoom = d; plotSeries(S.lastPlotArgs); },
     });
   }
 
@@ -810,31 +976,36 @@
     const cols = rows.columns;
     if (!rows.length || cols.length < 2) return showError('CSV needs a header row, a date/year column and at least one numeric column.');
     const lc = cols.map(c => c.toLowerCase().trim());
-    const yi = lc.indexOf('year'), mi = lc.indexOf('month');
+    const yi = lc.indexOf('year'), mi = lc.indexOf('month'), di = lc.indexOf('day'), hi = lc.indexOf('hour');
     const steps = [];
     for (const r of rows) {
-      let y, m = 1, d = 1;
-      if (yi >= 0) { y = +r[cols[yi]]; if (mi >= 0) m = +r[cols[mi]] || 1; }
-      else {
+      let y, m = 1, d = 1, H = 0;
+      if (yi >= 0) {
+        y = +r[cols[yi]];
+        if (mi >= 0) m = +r[cols[mi]] || 1;
+        if (di >= 0) d = +r[cols[di]] || 1;
+        if (hi >= 0) H = +r[cols[hi]] || 0;
+      } else {
         const s = String(r[cols[0]]).trim();
-        const mt = /^(-?\d{1,4})[-/](\d{1,2})(?:[-/](\d{1,2}))?/.exec(s);
-        if (mt) { y = +mt[1]; m = +mt[2]; d = +(mt[3] || 1); }
-        else if (/^-?\d+(\.\d+)?$/.test(s)) { const f = +s; y = Math.floor(f); m = Math.min(12, Math.floor((f - y) * 12) + 1); }
+        const mt = /^(-?\d{1,4})[-/](\d{1,2})(?:[-/](\d{1,2}))?(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/.exec(s);
+        if (mt) { y = +mt[1]; m = +mt[2]; d = +(mt[3] || 1); H = +(mt[4] || 0) + (+(mt[5] || 0)) / 60; }
+        else if (/^-?\d+(\.\d+)?$/.test(s)) { const f = +s; y = Math.floor(f); m = Math.min(12, Math.floor((f - y) * 12 + 1e-6) + 1); }
       }
-      steps.push(isFinite(y) ? { y, m, d, dec: y + (m - 1) / 12 + (d - 1) / 365, label: mi >= 0 || /-/.test(String(r[cols[0]])) ? `${MONTHS[m - 1]} ${y}` : `${y}` } : null);
+      const ok = isFinite(y) && m >= 1 && m <= 12 && d >= 1 && d <= 31;
+      steps.push(ok ? { y, m, d, H, dec: CFTime.toDec(y, m, d, H, 'standard') } : null);
     }
-    const ok = steps.filter(Boolean).length;
-    if (ok < 2) return showError('Could not read dates from the first column. Use YYYY-MM-DD, YYYY-MM, YYYY or decimal years (or columns named year and month).');
-    const skip = new Set([yi, mi, yi < 0 ? 0 : -1]);
+    const good = steps.filter(Boolean);
+    if (good.length < 2) return showError('Could not read dates from the first column. Use YYYY-MM-DD (optionally with hh:mm), YYYY-MM, YYYY or decimal years — or columns named year, month, day, hour.');
+    const info = CFTime.finalize(good);
+    const skip = new Set([yi, mi, di, hi, yi < 0 ? 0 : -1]);
     const numCols = cols.filter((c, k) => !skip.has(k) && rows.some(r => isFinite(parseFloat(r[c]))));
-    S.csv = { name, rows, cols: numCols, steps };
+    const [b0, b1] = defaultBaseline(good[0].y, good[good.length - 1].y);
+    S.csv = { name, rows, cols: numCols, steps, freq: info.freq, stepDays: info.stepDays, b0, b1 };
     const sel = $('csvCol'); sel.innerHTML = '';
     numCols.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
-    const ds = new Set(steps.filter(Boolean).map(s => s.y + '-' + s.m)).size;
-    S.csv.freq = ds > ok * 0.9 && steps.some(s => s && s.m !== 1) ? 'monthly' : 'yearly';
     document.body.classList.add('loaded', 'csvmode', 'nomap');
     document.body.classList.remove('notime');
-    $('fileInfo').innerHTML = `<b>${escapeHtml(name)}</b> · CSV · ${rows.length} rows · columns: ${escapeHtml(numCols.join(', '))}`;
+    $('fileInfo').innerHTML = `<b>${escapeHtml(name)}</b> · CSV · ${rows.length} rows (${info.freq}) · columns: ${escapeHtml(numCols.join(', '))}`;
     $('ncdump').textContent = `CSV file ${name}\ncolumns: ${cols.join(', ')}\nrows: ${rows.length}\n\nfirst rows:\n` + lines.slice(0, 8).join('\n');
     showTab('ts');
     drawCSVSeries();
@@ -845,7 +1016,7 @@
     const keep = c.steps.map((s, i) => (s ? i : -1)).filter(i => i >= 0);
     const steps = keep.map(i => c.steps[i]);
     const y = Float64Array.from(keep, i => { const v = parseFloat(c.rows[i][col]); return isFinite(v) ? v : NaN; });
-    plotSeries({ y, steps, title: `${col} — ${c.name}`, units: '', freq: c.freq });
+    plotSeries({ y, steps, title: `${col} — ${c.name}`, units: '', freq: c.freq, stepDays: c.stepDays, calendar: 'standard', baseline: [c.b0, c.b1] });
   }
 
   // ------------------------------------------------------------------ time controls
@@ -858,16 +1029,16 @@
     $('tslider').value = S.ti;
     updateTimeLabel();
     const okTime = t && t.ok;
+    $('mode').querySelector('[data-mode=single]').textContent = !okTime ? 'One step'
+      : { monthly: 'One month', daily: 'One day', yearly: 'One year', seasonal: 'One season', weekly: 'One week' }[t.freq] || 'One time step';
     document.querySelectorAll('#mode button').forEach(b => { b.disabled = !okTime && b.dataset.mode !== 'single'; });
     if (!okTime) setMode('single');
     if (okTime) {
       const [ya, yb] = yearsOfData();
       S.y0 = Math.max(ya, yb - 29); S.y1 = yb - (t.steps[t.n - 1].m < 12 && t.freq === 'monthly' ? 1 : 0);
       if (S.y1 < S.y0) S.y1 = S.y0;
-      // baseline: WMO 1991–2020 if available, else 1981–2010, else the first 30 years
-      if (ya <= 1991 && yb >= 2020) { S.b0 = 1991; S.b1 = 2020; }
-      else if (ya <= 1981 && yb >= 2010) { S.b0 = 1981; S.b1 = 2010; }
-      else { S.b0 = ya; S.b1 = Math.min(yb, ya + 29); }
+      // baseline: WMO 1991–2020 if available, else 1981–2010, else the first (up to) 30 years
+      [S.b0, S.b1] = defaultBaseline(ya, yb);
       for (const [id, val] of [['y0', S.y0], ['y1', S.y1], ['b0', S.b0], ['b1', S.b1]]) { const el = $(id); el.value = val; el.min = ya; el.max = yb; }
       $('yearsRange').textContent = `(data: ${ya}–${yb})`;
       const monthly = t.freq === 'monthly' || t.freq === 'daily' || t.freq === 'subdaily' || t.freq === 'weekly';
@@ -883,7 +1054,7 @@
     document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
     document.body.dataset.mode = m;
     $('modeHelp').innerHTML = {
-      single: 'One time step (e.g. one month). Use the slider or ▶ to animate.',
+      single: 'One time step (e.g. one month, day or hour). Use the slider or ▶ to animate.',
       mean: 'Average over the chosen months and years — this is a <b>climatology</b> when you average many years.',
       trend: 'Change per decade from a straight-line fit through the yearly (or seasonal) means. Red = warming / increasing.',
       std: 'How much the value varies from one year to the next (standard deviation). Large where e.g. El Niño acts.',
@@ -1149,6 +1320,7 @@
     for (const id of ['tsSource', 'tsAnom', 'tsSmooth', 'tsTrend', 'tsStyle']) $(id).onchange = () => updateTimeSeries();
     $('csvCol').onchange = drawCSVSeries;
     $('tsCSV').onclick = downloadTSCSV;
+    $('tsReset').onclick = () => { S.tsZoom = null; if (S.lastPlotArgs) plotSeries(S.lastPlotArgs); };
     $('tsPNG').onclick = () => downloadSVG($('tsChart'), S.lastSeries ? S.lastSeries.title : 'timeseries');
     $('zCSV').onclick = downloadZonalCSV;
     $('zPNG').onclick = () => downloadSVG($('zonalChart'), 'zonal_mean');

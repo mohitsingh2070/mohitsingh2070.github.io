@@ -134,6 +134,8 @@ body:not(.customregion) .only-custom { display: none; }
 .tabpane.active { display: block; }
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-bottom: 8px; font-size: 13px; }
 .toolbar label { display: flex; align-items: center; gap: 6px; }
+.btngroup { display: inline-flex; gap: 6px; white-space: nowrap; }
+.btngroup [hidden] { display: none; }
 .chart { position: relative; min-height: 120px; }
 .chart svg { display: block; max-width: 100%; }
 #ncdump { background: #f6f8fb; border: 1px solid var(--line); border-radius: 8px; padding: 12px; max-height: 480px; overflow: auto; white-space: pre; }
